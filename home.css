@@ -3,24 +3,25 @@ body {
     color: white;
 }
 
-/*nav {
-  background: #69E0A4;
-  padding: 10px 30px;
-  height: 58px;
-  width: 100%;
-}*/
-
-a {
-
+footer {
+    position: fixed;
+    height: 30px;
+    bottom: 0;
+    width: 100%;
+    background-color: white;
 }
 
 input {
   border: 1px;
   padding: 2px;
-
 }
 
-@media (max-width: 600px)
+p {
+  color: black;
+  margin: 6px 0px 10px;
+}
+
+/*@media (max-width: 600px)
 {
   .facet_sidebar
    {
@@ -33,4 +34,4 @@ input {
    {
     display: none;
    }
-}
+}*/
