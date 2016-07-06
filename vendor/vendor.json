@@ -429,6 +429,36 @@
 			"path": "golang.org/x/sys/unix",
 			"revision": "a408501be4d17ee978c04a618e7a1b22af058c0e",
 			"revisionTime": "2016-07-03T23:56:20Z"
+		},
+		{
+			"checksumSHA1": "I2d7Kn572Fz02mnnlcI4MHXCu0c=",
+			"path": "gopkg.in/check.v1",
+			"revision": "4f90aeace3a26ad7021961c297b22c42160c7b25",
+			"revisionTime": "2016-01-05T16:49:36Z"
+		},
+		{
+			"checksumSHA1": "o+ZqT87RLprKCGKMboo5vCxdAvA=",
+			"path": "gopkg.in/mgo.v2",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "zTjQOFGy4XTv4L33Kd2FhrV+mbM=",
+			"path": "gopkg.in/mgo.v2/bson",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "CkCDTsyN2Lbj1cL8+oaYKoPpI9w=",
+			"path": "gopkg.in/mgo.v2/internal/sasl",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
+		},
+		{
+			"checksumSHA1": "+1WDRPaOphSCmRMxVPIPBV4aubc=",
+			"path": "gopkg.in/mgo.v2/internal/scram",
+			"revision": "29cc868a5ca65f401ff318143f9408d02f4799cc",
+			"revisionTime": "2016-06-09T18:00:28Z"
 		}
 	],
 	"rootPath": "github.com/tsuru/Stsuru"
