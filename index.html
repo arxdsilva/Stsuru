@@ -58,22 +58,56 @@
                 </div>
                 <div class="col-md-11 col-xs-12 text-center">
                     <input type="text" class="form-control" placeholder="Link">
-                  </div>
+                </div>
                 <div class="col-md-1 col-xs-12 text-center">
                     <button type="button" class="btn btn-default">Go Shorter!</button>
                 </div>
             </div>
+            <div class="col-md-12 col-xs-12 text-center">
+                <p class="lead">
+                    <a href="#" class="btn btn-default btn btn-lg">Stored Links</a>
+                </p>
+            </div>
             <div class="col-md-3"></div>
         </div>
     </div>
+    <div class="inner cover">
+        <h1 class="cover-heading">Stored Links</h1>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Link</th>
+                    <th>Short</th>
+                    <th>#</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>{{ .Link }}</td>
+                    <td>{{ .Short }}</td>
+                    <td>
+                        <a href="">
+                            <button type="button" class="btn btn-danger">Remove</button>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <p class="lead">
+            <a href="" class="btn btn-lg btn-default">Home</a>
+        </p>
+    </div>
+
 
     <footer class="footer">
-      <div class="col-md-12 col-xs-12 text-center">
-        <p>Crafted in Rio de Janeiro @ <a href="http://www.globo.com">Globo.com</a> by <a href="http://www.twitter.com/arxdsilva">@ArxdSilva</a></p>
-      </div>
+        <div class="col-md-12 col-xs-12 text-center">
+            <p>Crafted in Rio de Janeiro @ <a href="http://www.globo.com">Globo.com</a> by <a href="http://www.twitter.com/arxdsilva">@ArxdSilva</a></p>
+        </div>
     </footer>
 
     <!-- bootstrap's scripts -->
     <script src="./outerfiles/js/jquery.min.js"></script>
     <script src="./outerfiles/js/bootstrap.min.js"></script>
+    <script LANGUAGE="JavaScript">
+
 </body>
