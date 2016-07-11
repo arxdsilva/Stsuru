@@ -1,5 +1,5 @@
-{{ define "home" }}
-{{ template "head"}}
+{% load head %}
+{% block home %}
 
 <div class="container">
     <div class="row">
@@ -18,32 +18,32 @@
         <div class="col-md-3"></div>
     </div>
 </div>
-<div class="inner cover col-md-12 col-xs-12">
-    <h1 class="cover-heading">Stored Links</h1>
-    <table class="table table-bordered">
-        <thead>
-            <tr>
-                <th>Link</th>
-                <th>Short</th>
-                <th>#</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>{{ Link }}</td>
-                <td>{{ Short }}</td>
-                <td>
-                    <a href="">
-                        <button type="button" class="btn btn-danger">Remove</button>
-                    </a>
-                </td>
-            </tr>
-        </tbody>
-    </table>
-    <p class="lead">
-        <a href="" class="btn btn-lg btn-default">Home</a>
-    </p>
+
+<div class="col-md-12 col-xs-12 text-center">
+  <h3 class="cover-heading">Stored Links</h1>
+  <table class="table table-hover">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Link</th>
+        <th>Short</th>
+        <th>Remove</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <th scope="row">{{ Number }}</th>
+        <td>{{ Link }}</td>
+        <td>{{ Short }}</td>
+        <td>
+          <a href="">
+              <button type="button" class="btn btn-danger">Remove</button>
+          </a>
+        </td>
+      </tr>
+    </tbody>
+  </table>
 </div>
 
-{{ template "footer" }}
-{{ end }}
+{% load footer %}
+{% endblock %}

@@ -21,17 +21,8 @@ p {
   margin: 6px 0px 10px;
 }
 
-/*@media (max-width: 600px)
-{
-  .facet_sidebar
-   {
-    display: none;
-   }
+img {
+  max-width: 65%;
+  max-height: 150px;
+  margin: -100px;
 }
-@media (min-width: 600px)
-{
-  .facet_sidebar
-   {
-    display: none;
-   }
-}*/
