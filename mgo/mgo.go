@@ -1,3 +1,4 @@
+// This is a 'lib' to use mongoDB in other packages so we can manipulate the stored local DB
 package main
 
 import (
@@ -8,40 +9,60 @@ import (
 )
 
 func main() {
-	// fazer a conexao:
+	session := InitDB()
+	c := InitSession(session, "nintendo", "pokemons")
+	InsertP(c, "charmander", 10, 100, "fire")
+	ReadDB(c)
+	DeleteDB(c, "charmander")
+	ReadDB(c)
+	CloseDB(session)
+}
+
+type Pokemon struct {
+	Name string
+	CP   int
+	HP   int
+	Type string
+}
+
+func InitDB() *mgo.Session {
 	session, err := mgo.Dial("localhost")
-	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
-	// Sets a DB and collection to work with
-	// By default if mongoDB doesnt have the named collection/database,
-	// It will create automatically
-	c := session.DB("nintendo").C("pokemons")
+	return session
+}
 
-	// Inerts the named pokemons in the mgoDB by using the Pokemons struct
-	err = c.Insert(
-		&Pokemon{"charmander", 10, 100, "fire"},
-		&Pokemon{"squirtle", 10, 100, "water"},
-		&Pokemon{"bulbasaur", 10, 100, "grass"},
-		&Pokemon{"pikachu", 10, 100, "electric"},
+func InitSession(s *mgo.Session, db, collection string) *mgo.Collection {
+	c := s.DB(db).C(collection)
+	return c
+}
+
+func InsertP(c *mgo.Collection, n string, cp int, hp int, tp string) {
+	err := c.Insert(
+		&Pokemon{n, cp, hp, tp},
 	)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func ReadDB(c *mgo.Collection) {
 	result := []Pokemon{}
-	err = c.Find(bson.M{}).All(&result)
+	err := c.Find(bson.M{}).All(&result)
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(result)
 }
 
-// Pokemons is a nice structure that will be used to make CRUD operations into
-// the mongoDB collection
-type Pokemon struct {
-	Name string
-	CP   int
-	HP   int
-	Type string
+func DeleteDB(c *mgo.Collection, n string) {
+	_, err := c.RemoveAll(bson.M{})
+	if err != nil {
+		panic(err)
+	}
+}
+
+func CloseDB(s *mgo.Session) {
+	s.Close()
 }

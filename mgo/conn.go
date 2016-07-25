@@ -6,9 +6,13 @@ import (
 
 // NewConn returns a new connection with database
 func NewConn() {
-	session, err := mgo.Dial("localhost")
+	conn, err := mgo.Dial("localhost")
 	if err != nil {
 		panic(err)
 	}
-	return session
+	return conn
+}
+
+func ()  {
+
 }
