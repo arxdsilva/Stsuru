@@ -2,29 +2,17 @@ package config
 
 import (
 	"github.com/imdario/mergo"
-	"github.com/valyala/fasthttp"
 )
 
 // Default values for base Iris conf
 const (
 	DefaultDisablePathCorrection = false
 	DefaultDisablePathEscape     = false
-	DefaultMaxRequestBodySize    = fasthttp.DefaultMaxRequestBodySize
+	DefaultCharset               = "UTF-8"
 )
 
 type (
 	// Iris configs for the station
-	// All fields can be changed before server's listen except the DisablePathCorrection field
-	//
-	// MaxRequestBodySize is the only options that can be changed after server listen -
-	// using Config.MaxRequestBodySize = ...
-	// Render's rest config can be changed after declaration but before server's listen -
-	// using Config.Render.Rest...
-	// Render's Template config can be changed after declaration but before server's listen -
-	// using Config.Render.Template...
-	// Sessions config can be changed after declaration but before server's listen -
-	// using Config.Sessions...
-	// and so on...
 	Iris struct {
 
 		// DisablePathCorrection corrects and redirects the requested path to the registed path
@@ -54,13 +42,6 @@ type (
 		// Default is false
 		DisableBanner bool
 
-		// MaxRequestBodySize Maximum request body size.
-		//
-		// The server rejects requests with bodies exceeding this limit.
-		//
-		// By default request body size is 4MB.
-		MaxRequestBodySize int64
-
 		// ProfilePath a the route path, set it to enable http pprof tool
 		// Default is empty, if you set it to a $path, these routes will handled:
 		// $path/cmdline
@@ -89,67 +70,50 @@ type (
 		// http://debug.yourdomain:PORT/threadcreate
 		// http://debug.yourdomain:PORT/pprof/block
 		ProfilePath string
+		// DisableTemplateEngines set to true to disable loading the default template engine (html/template) and disallow the use of iris.UseEngine
+		// default is false
+		DisableTemplateEngines bool
+		// IsDevelopment iris will act like a developer, for example
+		// If true then re-builds the templates on each request
+		// default is false
+		IsDevelopment bool
 
-		// Logger the configuration for the logger
-		// Iris logs ONLY SEMANTIC errors and the banner if enabled
-		Logger Logger
+		// Charset character encoding for various rendering
+		// used for templates and the rest of the responses
+		// defaults to "UTF-8"
+		Charset string
+
+		// Gzip enables gzip compression on your Render actions, this includes any type of render, templates and pure/raw content
+		// If you don't want to enable it globaly, you could just use the third parameter on context.Render("myfileOrResponse", structBinding{}, iris.RenderOptions{"gzip": true})
+		// defaults to false
+		Gzip bool
 
 		// Sessions contains the configs for sessions
 		Sessions Sessions
 
-		// Render contains the configs for template and rest configuration
-		Render Render
-
 		// Websocket contains the configs for Websocket's server integration
 		Websocket *Websocket
 
-		// Server contains the configs for the http server
-		// Server configs are the only one which are setted inside base Iris package (from Listen, ListenTLS, ListenUNIX) NO from users
-		//
-		// this field is useful only when you need to READ which is the server's address, certfile & keyfile or unix's mode.
-		//
-		Server Server
-
 		// Tester contains the configs for the test framework, so far we have only one because all test framework's configs are setted by the iris itself
+		// You can find example on the https://github.com/kataras/iris/glob/master/context_test.go
 		Tester Tester
 	}
-
-	// Render struct keeps organise all configuration about rendering, templates and rest currently.
-	Render struct {
-		// Template the configs for template
-		Template Template
-		// Rest configs for rendering.
-		//
-		// these options inside this config don't have any relation with the TemplateEngine
-		// from github.com/kataras/iris/rest
-		Rest Rest
-	}
 )
-
-// DefaultRender returns default configuration for templates and rest rendering
-func DefaultRender() Render {
-	return Render{
-		// set the default template config both not nil and default Engine to Standar
-		Template: DefaultTemplate(),
-		// set the default configs for rest
-		Rest: DefaultRest(),
-	}
-}
 
 // Default returns the default configuration for the Iris staton
 func Default() Iris {
 	return Iris{
-		DisablePathCorrection: DefaultDisablePathCorrection,
-		DisablePathEscape:     DefaultDisablePathEscape,
-		DisableBanner:         false,
-		MaxRequestBodySize:    DefaultMaxRequestBodySize,
-		ProfilePath:           "",
-		Logger:                DefaultLogger(),
-		Sessions:              DefaultSessions(),
-		Render:                DefaultRender(),
-		Websocket:             DefaultWebsocket(),
-		Server:                DefaultServer(),
-		Tester:                Tester{Debug: false},
+		DisablePathCorrection:  DefaultDisablePathCorrection,
+		DisablePathEscape:      DefaultDisablePathEscape,
+		DisableBanner:          false,
+		DisableTemplateEngines: false,
+		IsDevelopment:          false,
+		Charset:                DefaultCharset,
+		Gzip:                   false,
+		ProfilePath:            "",
+		Sessions:               DefaultSessions(),
+		Websocket:              DefaultWebsocket(),
+		Tester:                 DefaultTester(),
 	}
 }
 
@@ -178,18 +142,3 @@ func (c Iris) MergeSingle(cfg Iris) (config Iris) {
 
 	return
 }
-
-/* maybe some day
-// FromFile returns the configuration for Iris station
-//
-// receives one parameter
-// pathIni(string) the file path of the configuration-ini style
-//
-// returns an error if something bad happens
-func FromFile(pathIni string) (c Iris, err error) {
-	c = Iris{}
-	err = ini.MapTo(&c, pathIni)
-
-	return
-}
-*/

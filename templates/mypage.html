@@ -1,0 +1,48 @@
+{% block head %}
+<!DOCTYPE html>
+
+<head>
+    <title>Link shortener</title>
+</head>
+
+<body>
+  <form action="/link/add" method="post">
+    <div>
+      <label for="link">Link:</label>
+      <input type="text" id="link" name="user_link">
+    </div>
+    <div class="button">
+        <button type="submit">Post</button>
+    </div>
+  </form>
+
+  <div>
+    <h4>Stored Links</h1>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Link</th>
+          <th>Short</th>
+          <th>Remove</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for element, index in array %}
+        <tr>
+          <th>{{ element.Number }}</th>
+          <td>{{ element.Link }}</td>
+          <td>{{ element.Short }}</td>
+          <td>
+            <a href="/link/remove">
+                <button type="submit" name="remove">Remove</button>
+            </a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</body>
+{% endblock %}

@@ -13,5 +13,5 @@ func m() {
 }
 
 func home(ctx *iris.Context) {
-	ctx.Render("home1.html", shortener{}{})
+	ctx.Render("home.html", struct{ Name string }{Name: "iris"})
 }

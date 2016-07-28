@@ -45,14 +45,16 @@
 //
 // -----------------------------DOCUMENTATION----------------------------
 // ----------------------------_______________---------------------------
-// For middleware, templates, sessions, websockets, mails, subdomains,
+// For middleware, template engines, response engines, sessions, websockets, mails, subdomains,
 // dynamic subdomains, routes, party of subdomains & routes and much more
 // visit https://www.gitbook.com/book/kataras/iris/details
 package iris // import "github.com/kataras/iris"
 
 import (
 	"fmt"
+	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
@@ -61,8 +63,20 @@ import (
 	"testing"
 	"time"
 
+	"github.com/klauspost/compress/gzip"
+
+	"sync"
+
 	"github.com/gavv/httpexpect"
 	"github.com/iris-contrib/errors"
+	"github.com/iris-contrib/logger"
+	"github.com/iris-contrib/response/data"
+	"github.com/iris-contrib/response/json"
+	"github.com/iris-contrib/response/jsonp"
+	"github.com/iris-contrib/response/markdown"
+	"github.com/iris-contrib/response/text"
+	"github.com/iris-contrib/response/xml"
+	"github.com/iris-contrib/template/html"
 	"github.com/kataras/iris/config"
 	"github.com/kataras/iris/context"
 	"github.com/kataras/iris/utils"
@@ -71,84 +85,49 @@ import (
 
 const (
 	// Version of the iris
-	Version = "3.0.0-rc.4"
-	banner  = `         _____      _
+	Version = "4.0.0-alpha.4"
+
+	banner = `         _____      _
         |_   _|    (_)
           | |  ____ _  ___
           | | | __|| |/ __|
          _| |_| |  | |\__ \
-        |_____|_|  |_||___/ ` + Version + `
-                                                 				 `
+        |_____|_|  |_||___/ ` + Version + ` `
 )
 
-type (
-	// FrameworkAPI contains the main Iris Public API
-	FrameworkAPI interface {
-		MuxAPI
-		Must(error)
-		ListenWithErr(string) error
-		Listen(string)
-		ListenTLSWithErr(string, string, string) error
-		ListenTLS(string, string, string)
-		ListenUNIXWithErr(string, os.FileMode) error
-		ListenUNIX(string, os.FileMode)
-		SecondaryListen(config.Server) *Server
-		NoListen(...string) *Server
-		Close()
-		// global middleware prepending, registers to all subdomains, to all parties, you can call it at the last also
-		MustUse(...Handler)
-		MustUseFunc(...HandlerFunc)
-		OnError(int, HandlerFunc)
-		EmitError(int, *Context)
-		Lookup(string) Route
-		Lookups() []Route
-		Path(string, ...interface{}) string
-		URL(string, ...interface{}) string
-		TemplateString(string, interface{}, ...string) string
-		Tester(t *testing.T) *httpexpect.Expect
-	}
-
-	// RouteNameFunc the func returns from the MuxAPi's methods, optionally sets the name of the Route (*route)
-	RouteNameFunc func(string)
-	// MuxAPI the visible api for the serveMux
-	MuxAPI interface {
-		Party(string, ...HandlerFunc) MuxAPI
-		// middleware serial, appending
-		Use(...Handler)
-		UseFunc(...HandlerFunc)
-
-		// main handlers
-		Handle(string, string, ...Handler) RouteNameFunc
-		HandleFunc(string, string, ...HandlerFunc) RouteNameFunc
-		// H_ is used to convert a context.IContext handler func to iris.HandlerFunc, is used only inside iris internal package to avoid import cycles
-		H_(string, string, func(context.IContext)) func(string)
-		API(string, HandlerAPI, ...HandlerFunc)
-
-		// http methods
-		Get(string, ...HandlerFunc) RouteNameFunc
-		Post(string, ...HandlerFunc) RouteNameFunc
-		Put(string, ...HandlerFunc) RouteNameFunc
-		Delete(string, ...HandlerFunc) RouteNameFunc
-		Connect(string, ...HandlerFunc) RouteNameFunc
-		Head(string, ...HandlerFunc) RouteNameFunc
-		Options(string, ...HandlerFunc) RouteNameFunc
-		Patch(string, ...HandlerFunc) RouteNameFunc
-		Trace(string, ...HandlerFunc) RouteNameFunc
-		Any(string, ...HandlerFunc)
-
-		// static content
-		StaticHandler(string, int, bool, bool, []string) HandlerFunc
-		Static(string, string, int) RouteNameFunc
-		StaticFS(string, string, int) RouteNameFunc
-		StaticWeb(string, string, int) RouteNameFunc
-		StaticServe(string, ...string) RouteNameFunc
-		StaticContent(string, string, []byte) func(string)
-		Favicon(string, ...string) RouteNameFunc
-
-		// templates
-		Layout(string) MuxAPI // returns itself
-	}
+// Default entry, use it with iris.$anyPublicFunc
+var (
+	Default   *Framework
+	Config    *config.Iris
+	Logger    *logger.Logger
+	Plugins   PluginContainer
+	Websocket WebsocketServer
+	Servers   *ServerList
+	// Available is a channel type of bool, fired to true when the server is opened and all plugins ran
+	// never fires false, if the .Close called then the channel is re-allocating.
+	// the channel is closed only when .ListenVirtual is used, otherwise it remains open until you close it.
+	//
+	// Note: it is a simple channel and decided to put it here and no inside HTTPServer, doesn't have statuses just true and false, simple as possible
+	// Where to use that?
+	// this is used on extreme cases when you don't know which .Listen/.ListenVirtual will be called
+	// and you want to run/declare something external-not-Iris (all Iris functionality declared before .Listen/.ListenVirtual) AFTER the server is started and plugins finished.
+	// see the server_test.go for an example
+	Available chan bool
 )
+
+func initDefault() {
+	Default = New()
+	Config = Default.Config
+	Logger = Default.Logger
+	Plugins = Default.Plugins
+	Websocket = Default.Websocket
+	Servers = Default.Servers
+	Available = Default.Available
+}
+
+func init() {
+	initDefault()
+}
 
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
@@ -156,7 +135,194 @@ type (
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
 
+type (
+	// FrameworkAPI contains the main Iris Public API
+	FrameworkAPI interface {
+		MuxAPI
+		Must(error)
+		AddServer(config.Server) *Server
+		ListenTo(config.Server) error
+		Listen(string)
+		ListenTLS(string, string, string)
+		ListenUNIX(string, os.FileMode)
+		ListenVirtual(...string) *Server
+		Go() error
+		Close() error
+		UseSessionDB(SessionDatabase)
+		UseResponse(ResponseEngine, ...string) func(string)
+		UseTemplate(TemplateEngine) *TemplateEngineLocation
+		UseGlobal(...Handler)
+		UseGlobalFunc(...HandlerFunc)
+		OnError(int, HandlerFunc)
+		EmitError(int, *Context)
+		Lookup(string) Route
+		Lookups() []Route
+		Path(string, ...interface{}) string
+		URL(string, ...interface{}) string
+		TemplateString(string, interface{}, ...map[string]interface{}) string
+		ResponseString(string, interface{}, ...map[string]interface{}) string
+		Tester(t *testing.T) *httpexpect.Expect
+	}
+
+	// Framework is our God |\| Google.Search('Greek mythology Iris')
+	//
+	// Implements the FrameworkAPI
+	Framework struct {
+		*muxAPI
+		Config         *config.Iris
+		gzipWriterPool sync.Pool // used for several methods, usually inside context
+		sessions       *sessionsManager
+		responses      *responseEngines
+		templates      *templateEngines
+		// fields which are useful to the user/dev
+		// the last  added server is the main server
+		Servers *ServerList
+		// configuration by instance.Logger.Config
+		Logger    *logger.Logger
+		Plugins   PluginContainer
+		Websocket WebsocketServer
+		Available chan bool
+		// this is setted once when .Tester(t) is called
+		testFramework *httpexpect.Expect
+	}
+)
+
 var _ FrameworkAPI = &Framework{}
+
+// New creates and returns a new Iris station aka Framework.
+//
+// Receives an optional config.Iris as parameter
+// If empty then config.Default() is used instead
+func New(cfg ...config.Iris) *Framework {
+	c := config.Default().Merge(cfg)
+
+	// we always use 's' no 'f' because 's' is easier for me to remember because of 'station'
+	// some things never change :)
+	s := &Framework{
+		Config:    &c,
+		responses: &responseEngines{},
+		Available: make(chan bool),
+	}
+	{
+		///NOTE: set all with s.Config pointer
+		// set the Logger
+		s.Logger = logger.New(logger.DefaultConfig())
+		// set the plugin container
+		s.Plugins = &pluginContainer{logger: s.Logger}
+		// set the templates
+		s.templates = &templateEngines{
+			helpers: map[string]interface{}{
+				"url":     s.URL,
+				"urlpath": s.Path,
+			},
+			engines: make([]*templateEngineWrapper, 0),
+		}
+		// set the sessions
+		if s.Config.Sessions.Cookie != "" {
+			//set the session manager
+			s.sessions = newSessionsManager(&s.Config.Sessions)
+		}
+		// set the websocket server
+		s.Websocket = NewWebsocketServer(s.Config.Websocket)
+		// set the servemux, which will provide us the public API also, with its context pool
+		mux := newServeMux(sync.Pool{New: func() interface{} { return &Context{framework: s} }}, s.Logger)
+		mux.onLookup = s.Plugins.DoPreLookup
+		// set the public router API (and party)
+		s.muxAPI = &muxAPI{mux: mux, relativePath: "/"}
+
+		s.Servers = &ServerList{mux: mux, servers: make([]*Server, 0)}
+	}
+
+	return s
+}
+
+func (s *Framework) initialize() {
+
+	// prepare the response engines, if no response engines setted for the default content-types
+	// then add them
+
+	for _, ctype := range defaultResponseKeys {
+		if rengine := s.responses.getBy(ctype); rengine == nil {
+			// if not exists
+			switch ctype {
+			case contentText:
+				s.UseResponse(text.New(), ctype)
+			case contentBinary:
+				s.UseResponse(data.New(), ctype)
+			case contentJSON:
+				s.UseResponse(json.New(), ctype)
+			case contentJSONP:
+				s.UseResponse(jsonp.New(), ctype)
+			case contentXML:
+				s.UseResponse(xml.New(), ctype)
+			case contentMarkdown:
+				s.UseResponse(markdown.New(), ctype)
+			}
+		}
+	}
+
+	// prepare the templates if enabled
+	if !s.Config.DisableTemplateEngines {
+
+		s.templates.reload = s.Config.IsDevelopment
+		// check and prepare the templates
+		if len(s.templates.engines) == 0 { // no template engine is registered, let's use the default
+			s.UseTemplate(html.New())
+		}
+
+		if err := s.templates.loadAll(); err != nil {
+			s.Logger.Panic(err) // panic on templates loading before listening if we have an error.
+		}
+	}
+	// listen to websocket connections
+	RegisterWebsocketServer(s, s.Websocket, s.Logger)
+
+	//  prepare the mux & the server
+	s.mux.setCorrectPath(!s.Config.DisablePathCorrection)
+	s.mux.setEscapePath(!s.Config.DisablePathEscape)
+	// set the debug profiling handlers if ProfilePath is setted
+	if debugPath := s.Config.ProfilePath; debugPath != "" {
+		s.Handle(MethodGet, debugPath+"/*action", profileMiddleware(debugPath)...)
+	}
+}
+
+// Go starts the iris station, listens to all registered servers, and prepare only if Virtual
+func Go() error {
+	return Default.Go()
+}
+
+// Go starts the iris station, listens to all registered servers, and prepare only if Virtual
+func (s *Framework) Go() error {
+	s.initialize()
+	s.Plugins.DoPreListen(s)
+
+	if firstErr := s.Servers.OpenAll(); firstErr != nil {
+		return firstErr
+	}
+
+	// print the banner
+	if !s.Config.DisableBanner {
+		openedServers := s.Servers.GetAllOpened()
+		l := len(openedServers)
+		hosts := make([]string, l, l)
+		for i, srv := range openedServers {
+			hosts[i] = srv.Host()
+		}
+
+		bannerMessage := time.Now().Format(config.TimeFormat) + ": Running at " + strings.Join(hosts, ", ")
+		s.Logger.PrintBanner(banner, "\n"+bannerMessage)
+
+	}
+
+	s.Plugins.DoPostListen(s)
+
+	go func() { s.Available <- true }()
+	ch := make(chan os.Signal)
+	<-ch
+	s.Close() // btw, don't panic here
+
+	return nil
+}
 
 // Must panics on error, it panics on registed iris' logger
 func Must(err error) {
@@ -170,60 +336,89 @@ func (s *Framework) Must(err error) {
 	}
 }
 
-// ListenWithErr starts the standalone http server
-// which listens to the addr parameter which as the form of
-// host:port
+// AddServer same as .Servers.Add(config.Server)
 //
-// It returns an error you are responsible how to handle this
-// if you need a func to panic on error use the Listen
-// ex: log.Fatal(iris.ListenWithErr(":8080"))
-func ListenWithErr(addr string) error {
-	return Default.ListenWithErr(addr)
+// AddServer starts a server which listens to this station
+// Note that  the view engine's functions {{ url }} and {{ urlpath }} will return the first's registered server's scheme (http/https)
+//
+// this is useful mostly when you want to have two or more listening ports ( two or more servers ) for the same station
+//
+// receives one parameter which is the config.Server for the new server
+// returns the new standalone server(  you can close this server by the returning reference)
+//
+// If you need only one server you can use the blocking-funcs: .Listen/ListenTLS/ListenUNIX/ListenTo
+//
+// this is a NOT A BLOCKING version, the main .Listen/ListenTLS/ListenUNIX/ListenTo should be always executed LAST, so this function goes before the main .Listen/ListenTLS/ListenUNIX/ListenTo
+func AddServer(cfg config.Server) *Server {
+	return Default.AddServer(cfg)
+}
+
+// AddServer same as .Servers.Add(config.Server)
+//
+// AddServer starts a server which listens to this station
+// Note that  the view engine's functions {{ url }} and {{ urlpath }} will return the last registered server's scheme (http/https)
+//
+// this is useful mostly when you want to have two or more listening ports ( two or more servers ) for the same station
+//
+// receives one parameter which is the config.Server for the new server
+// returns the new standalone server(  you can close this server by the returning reference)
+//
+// If you need only one server you can use the blocking-funcs: .Listen/ListenTLS/ListenUNIX/ListenTo
+//
+// this is a NOT A BLOCKING version, the main .Listen/ListenTLS/ListenUNIX/ListenTo should be always executed LAST, so this function goes before the main .Listen/ListenTLS/ListenUNIX/ListenTo
+func (s *Framework) AddServer(cfg config.Server) *Server {
+	return s.Servers.Add(cfg)
+}
+
+// ListenTo listens to a server but accepts the full server's configuration
+// returns an error, you're responsible to handle that
+// or use the iris.Must(iris.ListenTo(config.Server{}))
+//
+// it's a blocking func
+func ListenTo(cfg config.Server) error {
+	return Default.ListenTo(cfg)
+}
+
+// ListenTo listens to a server but acceots the full server's configuration
+// returns an error, you're responsible to handle that
+// or use the iris.Must(iris.ListenTo(config.Server{}))
+//
+// it's a blocking func
+func (s *Framework) ListenTo(cfg config.Server) (err error) {
+	if cfg.ReadBufferSize == 0 {
+		cfg.ReadBufferSize = config.DefaultReadBufferSize
+	}
+	if cfg.WriteBufferSize == 0 {
+		cfg.WriteBufferSize = config.DefaultWriteBufferSize
+	}
+	if cfg.MaxRequestBodySize == 0 {
+		cfg.MaxRequestBodySize = config.DefaultMaxRequestBodySize
+	}
+	if cfg.ListeningAddr == "" {
+		cfg.ListeningAddr = config.DefaultServerAddr
+	}
+	s.Servers.Add(cfg)
+	return s.Go()
 }
 
 // Listen starts the standalone http server
 // which listens to the addr parameter which as the form of
 // host:port
 //
-// It panics on error if you need a func to return an error use the ListenWithErr
-// ex: iris.Listen(":8080")
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(config.Server{ListeningAddr:":8080"})
 func Listen(addr string) {
 	Default.Listen(addr)
 }
 
-// ListenWithErr starts the standalone http server
-// which listens to the addr parameter which as the form of
-// host:port
-//
-// It returns an error you are responsible how to handle this
-// if you need a func to panic on error use the Listen
-// ex: log.Fatal(iris.ListenWithErr(":8080"))
-func (s *Framework) ListenWithErr(addr string) error {
-	s.Config.Server.ListeningAddr = addr
-	return s.openServer()
-}
-
 // Listen starts the standalone http server
 // which listens to the addr parameter which as the form of
 // host:port
 //
-// It panics on error if you need a func to return an error use the ListenWithErr
-// ex: iris.Listen(":8080")
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(config.Server{ListeningAddr:":8080"})
 func (s *Framework) Listen(addr string) {
-	s.Must(s.ListenWithErr(addr))
-}
-
-// ListenTLSWithErr Starts a https server with certificates,
-// if you use this method the requests of the form of 'http://' will fail
-// only https:// connections are allowed
-// which listens to the addr parameter which as the form of
-// host:port
-//
-// It returns an error you are responsible how to handle this
-// if you need a func to panic on error use the ListenTLS
-// ex: log.Fatal(iris.ListenTLSWithErr(":8080","yourfile.cert","yourfile.key"))
-func ListenTLSWithErr(addr string, certFile string, keyFile string) error {
-	return Default.ListenTLSWithErr(addr, certFile, keyFile)
+	s.Must(s.ListenTo(config.Server{ListeningAddr: addr}))
 }
 
 // ListenTLS Starts a https server with certificates,
@@ -232,176 +427,204 @@ func ListenTLSWithErr(addr string, certFile string, keyFile string) error {
 // which listens to the addr parameter which as the form of
 // host:port
 //
-// It panics on error if you need a func to return an error use the ListenTLSWithErr
-// ex: iris.ListenTLS(":8080","yourfile.cert","yourfile.key")
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(":8080","yourfile.cert","yourfile.key")
 func ListenTLS(addr string, certFile string, keyFile string) {
 	Default.ListenTLS(addr, certFile, keyFile)
 }
 
-// ListenTLSWithErr Starts a https server with certificates,
-// if you use this method the requests of the form of 'http://' will fail
-// only https:// connections are allowed
-// which listens to the addr parameter which as the form of
-// host:port
-//
-// It returns an error you are responsible how to handle this
-// if you need a func to panic on error use the ListenTLS
-// ex: log.Fatal(iris.ListenTLSWithErr(":8080","yourfile.cert","yourfile.key"))
-func (s *Framework) ListenTLSWithErr(addr string, certFile string, keyFile string) error {
-	if certFile == "" || keyFile == "" {
-		return fmt.Errorf("You should provide certFile and keyFile for TLS/SSL")
-	}
-	s.Config.Server.ListeningAddr = addr
-	s.Config.Server.CertFile = certFile
-	s.Config.Server.KeyFile = keyFile
-
-	return s.openServer()
-}
-
 // ListenTLS Starts a https server with certificates,
 // if you use this method the requests of the form of 'http://' will fail
 // only https:// connections are allowed
 // which listens to the addr parameter which as the form of
 // host:port
 //
-// It panics on error if you need a func to return an error use the ListenTLSWithErr
-// ex: iris.ListenTLS(":8080","yourfile.cert","yourfile.key")
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(":8080","yourfile.cert","yourfile.key")
 func (s *Framework) ListenTLS(addr string, certFile, keyFile string) {
-	s.Must(s.ListenTLSWithErr(addr, certFile, keyFile))
-}
-
-// ListenUNIXWithErr starts the process of listening to the new requests using a 'socket file', this works only on unix
-// returns an error if something bad happens when trying to listen to
-func ListenUNIXWithErr(addr string, mode os.FileMode) error {
-	return Default.ListenUNIXWithErr(addr, mode)
+	if certFile == "" || keyFile == "" {
+		s.Logger.Panic("You should provide certFile and keyFile for TLS/SSL")
+	}
+	s.Must(s.ListenTo(config.Server{ListeningAddr: addr, CertFile: certFile, KeyFile: keyFile}))
 }
 
 // ListenUNIX starts the process of listening to the new requests using a 'socket file', this works only on unix
-// panics on error
+//
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(":8080", Mode: os.FileMode)
 func ListenUNIX(addr string, mode os.FileMode) {
 	Default.ListenUNIX(addr, mode)
 }
 
-// ListenUNIXWithErr starts the process of listening to the new requests using a 'socket file', this works only on unix
-// returns an error if something bad happens when trying to listen to
-func (s *Framework) ListenUNIXWithErr(addr string, mode os.FileMode) error {
-	s.Config.Server.ListeningAddr = addr
-	s.Config.Server.Mode = mode
-	return s.openServer()
-}
-
 // ListenUNIX starts the process of listening to the new requests using a 'socket file', this works only on unix
-// panics on error
+//
+// It panics on error if you need a func to return an error, use the ListenTo
+// ex: err := iris.ListenTo(":8080", Mode: os.FileMode)
 func (s *Framework) ListenUNIX(addr string, mode os.FileMode) {
-	s.Must(s.ListenUNIXWithErr(addr, mode))
+	s.Must(ListenTo(config.Server{ListeningAddr: addr, Mode: mode}))
 }
 
-// SecondaryListen starts a server which listens to this station
-// Note that  the view engine's functions {{ url }} and {{ urlpath }} will return the first's registered server's scheme (http/https)
-//
-// this is useful only when you want to have two or more listening ports ( two or more servers ) for the same station
-//
-// receives one parameter which is the config.Server for the new server
-// returns the new standalone server(  you can close this server by the returning reference)
-//
-// If you need only one server this function is not for you, instead you must use the normal .Listen/ListenTLS functions.
-//
-// this is a NOT A BLOCKING version, the main iris.Listen should be always executed LAST, so this function goes before the main .Listen.
-func SecondaryListen(cfg config.Server) *Server {
-	return Default.SecondaryListen(cfg)
-}
-
-// SecondaryListen starts a server which listens to this station
-// Note that  the view engine's functions {{ url }} and {{ urlpath }} will return the first's registered server's scheme (http/https)
-//
-// this is useful only when you want to have two or more listening ports ( two or more servers ) for the same station
-//
-// receives one parameter which is the config.Server for the new server
-// returns the new standalone server(  you can close this server by the returning reference)
-//
-// If you need only one server this function is not for you, instead you must use the normal .Listen/ListenTLS functions.
-//
-// this is a NOT A BLOCKING version, the main iris.Listen should be always executed LAST, so this function goes before the main .Listen.
-func (s *Framework) SecondaryListen(cfg config.Server) *Server {
-	srv := newServer(&cfg)
-	// add a post listen event to start this server after the previous started
-	s.Plugins.Add(PostListenFunc(func(*Framework) {
-		go func() { // goroutine in order to not block any runtime post listeners
-			srv.Handler = s.HTTPServer.Handler
-			if err := srv.Open(); err == nil {
-				ch := make(chan os.Signal)
-				<-ch
-				srv.Close()
-			}
-		}()
-	}))
-
-	return srv
-}
-
-// NoListen is useful only when you want to test Iris, it doesn't starts the server but it configures and returns it
-func NoListen(optionalAddr ...string) *Server {
-	return Default.NoListen(optionalAddr...)
-}
-
-// NoListen is useful only when you want to test Iris, it doesn't starts the server but it configures and returns it
+// ListenVirtual is useful only when you want to test Iris, it doesn't starts the server but it configures and returns it
 // initializes the whole framework but server doesn't listens to a specific net.Listener
-func (s *Framework) NoListen(optionalAddr ...string) *Server {
-	return s.justServe(optionalAddr...)
+// it is not blocking the app
+func ListenVirtual(optionalAddr ...string) *Server {
+	return Default.ListenVirtual(optionalAddr...)
 }
 
-// CloseWithErr terminates the server and returns an error if any
-func CloseWithErr() error {
-	return Default.CloseWithErr()
+// ListenVirtual is useful only when you want to test Iris, it doesn't starts the server but it configures and returns it
+// initializes the whole framework but server doesn't listens to a specific net.Listener
+// it is not blocking the app
+func (s *Framework) ListenVirtual(optionalAddr ...string) *Server {
+	s.Config.DisableBanner = true
+	cfg := config.DefaultServer()
+
+	if len(optionalAddr) > 0 && optionalAddr[0] != "" {
+		cfg.ListeningAddr = optionalAddr[0]
+	}
+	cfg.Virtual = true
+
+	go func() {
+		s.Must(s.ListenTo(cfg))
+	}()
+
+	if ok := <-s.Available; !ok {
+		s.Logger.Panic("Unexpected error:Virtual server cannot start, please report this as bug!!")
+	}
+
+	close(s.Available)
+	return s.Servers.Main()
 }
 
-//Close terminates the server and panic if error occurs
-func Close() {
-	Default.Close()
+// Close terminates all the registered servers and returns an error if any
+// if you want to panic on this error use the iris.Must(iris.Close())
+func Close() error {
+	return Default.Close()
 }
 
-// CloseWithErr terminates the server and returns an error if any
-func (s *Framework) CloseWithErr() error {
-	return s.closeServer()
+// Close terminates all the registered servers and returns an error if any
+// if you want to panic on this error use the iris.Must(iris.Close())
+func (s *Framework) Close() error {
+	s.Plugins.DoPreClose(s)
+	s.Available = make(chan bool)
+	return s.Servers.CloseAll()
 }
 
-//Close terminates the server and panic if error occurs
-func (s *Framework) Close() {
-	s.Must(s.CloseWithErr())
+// UseSessionDB registers a session database, you can register more than one
+// accepts a session database which implements a Load(sid string) map[string]interface{} and an Update(sid string, newValues map[string]interface{})
+// the only reason that a session database will be useful for you is when you want to keep the session's values/data after the app restart
+// a session database doesn't have write access to the session, it doesn't accept the context, so forget 'cookie database' for sessions, I will never allow that, for your protection.
+//
+// Note: Don't worry if no session database is registered, your context.Session will continue to work.
+func UseSessionDB(db SessionDatabase) {
+	Default.UseSessionDB(db)
 }
 
-// MustUse registers Handler middleware  to the beginning, prepends them instead of append
+// UseSessionDB registers a session database, you can register more than one
+// accepts a session database which implements a Load(sid string) map[string]interface{} and an Update(sid string, newValues map[string]interface{})
+// the only reason that a session database will be useful for you is when you want to keep the session's values/data after the app restart
+// a session database doesn't have write access to the session, it doesn't accept the context, so forget 'cookie database' for sessions, I will never allow that, for your protection.
+//
+// Note: Don't worry if no session database is registered, your context.Session will continue to work.
+func (s *Framework) UseSessionDB(db SessionDatabase) {
+	s.sessions.registerDatabase(db)
+}
+
+// UseResponse accepts a ResponseEngine and the key or content type on which the developer wants to register this response engine
+// the gzip and charset are automatically supported by Iris, by passing the iris.RenderOptions{} map on the context.Render
+// context.Render renders this response or a template engine if no response engine with the 'key' found
+// with these engines you can inject the context.JSON,Text,Data,JSONP,XML also
+// to do that just register with UseResponse(myEngine,"application/json") and so on
+// look at the https://github.com/iris-contrib/response for examples
+//
+// if more than one respone engine with the same key/content type exists then the results will be appended to the final request's body
+// this allows the developer to be able to create 'middleware' responses engines
+//
+// Note: if you pass an engine which contains a dot('.') as key, then the engine will not be registered.
+// you don't have to import and use github.com/iris-contrib/json, jsonp, xml, data, text, markdown
+// because iris uses these by default if no other response engine is registered for these content types
+//
+// Note 2:
+// one key has one content type but many response engines ( one to many)
+//
+// returns a function(string) which you can set the content type, if it's not already declared from the key.
+// careful you should call this in the same execution.
+// one last thing, you can have unlimited number of response engines for the same key and same content type.
+// key and content type may be different, but one key is only for one content type,
+// Do not use different content types with more than one response engine on the same key
+func UseResponse(e ResponseEngine, forContentTypesOrKeys ...string) func(string) {
+	return Default.UseResponse(e, forContentTypesOrKeys...)
+}
+
+// UseResponse accepts a ResponseEngine and the key or content type on which the developer wants to register this response engine
+// the gzip and charset are automatically supported by Iris, by passing the iris.RenderOptions{} map on the context.Render
+// context.Render renders this response or a template engine if no response engine with the 'key' found
+// with these engines you can inject the context.JSON,Text,Data,JSONP,XML also
+// to do that just register with UseResponse(myEngine,"application/json") and so on
+// look at the https://github.com/iris-contrib/response for examples
+//
+// if more than one respone engine with the same key/content type exists then the results will be appended to the final request's body
+// this allows the developer to be able to create 'middleware' responses engines
+//
+// Note: if you pass an engine which contains a dot('.') as key, then the engine will not be registered.
+// you don't have to import and use github.com/iris-contrib/json, jsonp, xml, data, text, markdown
+// because iris uses these by default if no other response engine is registered for these content types
+//
+// Note 2:
+// one key has one content type but many response engines ( one to many)
+//
+// returns a function(string) which you can set the content type, if it's not already declared from the key.
+// careful you should call this in the same execution.
+// one last thing, you can have unlimited number of response engines for the same key and same content type.
+// key and content type may be different, but one key is only for one content type,
+// Do not use different content types with more than one response engine on the same key
+func (s *Framework) UseResponse(e ResponseEngine, forContentTypesOrKeys ...string) func(string) {
+	return s.responses.add(e, forContentTypesOrKeys...)
+}
+
+// UseTemplate adds a template engine to the iris view system
+// it does not build/load them yet
+func UseTemplate(e TemplateEngine) *TemplateEngineLocation {
+	return Default.UseTemplate(e)
+}
+
+// UseTemplate adds a template engine to the iris view system
+// it does not build/load them yet
+func (s *Framework) UseTemplate(e TemplateEngine) *TemplateEngineLocation {
+	return s.templates.add(e)
+}
+
+// UseGlobal registers Handler middleware  to the beginning, prepends them instead of append
 //
 // Use it when you want to add a global middleware to all parties, to all routes in  all subdomains
 // It can be called after other, (but before .Listen of course)
-func MustUse(handlers ...Handler) {
-	Default.MustUse(handlers...)
+func UseGlobal(handlers ...Handler) {
+	Default.UseGlobal(handlers...)
 }
 
-// MustUseFunc registers HandlerFunc middleware  to the beginning, prepends them instead of append
+// UseGlobalFunc registers HandlerFunc middleware  to the beginning, prepends them instead of append
 //
 // Use it when you want to add a global middleware to all parties, to all routes in  all subdomains
 // It can be called after other, (but before .Listen of course)
-func MustUseFunc(handlersFn ...HandlerFunc) {
-	Default.MustUseFunc(handlersFn...)
+func UseGlobalFunc(handlersFn ...HandlerFunc) {
+	Default.UseGlobalFunc(handlersFn...)
 }
 
-// MustUse registers Handler middleware  to the beginning, prepends them instead of append
+// UseGlobal registers Handler middleware  to the beginning, prepends them instead of append
 //
 // Use it when you want to add a global middleware to all parties, to all routes in  all subdomains
 // It can be called after other, (but before .Listen of course)
-func (s *Framework) MustUse(handlers ...Handler) {
+func (s *Framework) UseGlobal(handlers ...Handler) {
 	for _, r := range s.mux.lookups {
 		r.middleware = append(handlers, r.middleware...)
 	}
 }
 
-// MustUseFunc registers HandlerFunc middleware to the beginning, prepends them instead of append
+// UseGlobalFunc registers HandlerFunc middleware to the beginning, prepends them instead of append
 //
 // Use it when you want to add a global middleware to all parties, to all routes in  all subdomains
 // It can be called after other, (but before .Listen of course)
-func (s *Framework) MustUseFunc(handlersFn ...HandlerFunc) {
-	s.MustUse(convertToHandlers(handlersFn)...)
+func (s *Framework) UseGlobalFunc(handlersFn ...HandlerFunc) {
+	s.UseGlobal(convertToHandlers(handlersFn)...)
 }
 
 // OnError registers a custom http error handler
@@ -528,6 +751,39 @@ func (s *Framework) Path(routeName string, args ...interface{}) string {
 	return fmt.Sprintf(r.formattedPath, arguments...)
 }
 
+// DecodeURL returns the uri parameter as url (string)
+// useful when you want to pass something to a database and be valid to retrieve it via context.Param
+// use it only for special cases, when the default behavior doesn't suits you.
+//
+// http://www.blooberry.com/indexdot/html/topics/urlencoding.htm
+// it uses just the url.QueryUnescape
+func DecodeURL(uri string) string {
+	if uri == "" {
+		return ""
+	}
+	encodedPath, _ := url.QueryUnescape(uri)
+	return encodedPath
+}
+
+// DecodeFasthttpURL returns the path decoded as url
+// useful when you want to pass something to a database and be valid to retrieve it via context.Param
+// use it only for special cases, when the default behavior doesn't suits you.
+//
+// http://www.blooberry.com/indexdot/html/topics/urlencoding.htm
+/* Credits to Manish Singh @kryptodev for URLDecode by post issue share code */
+// simple things, if DecodeURL doesn't gives you the results you waited, use this function
+// I know it is not the best  way to describe it, but I don't think you will ever need this, it is here for ANY CASE
+func DecodeFasthttpURL(path string) string {
+	if path == "" {
+		return ""
+	}
+	u := fasthttp.AcquireURI()
+	u.SetPath(path)
+	encodedPath := u.String()[8:]
+	fasthttp.ReleaseURI(u)
+	return encodedPath
+}
+
 // URL returns the subdomain+ host + Path(...optional named parameters if route is dynamic)
 // returns an empty string if parse is failed
 func URL(routeName string, args ...interface{}) (url string) {
@@ -541,13 +797,10 @@ func (s *Framework) URL(routeName string, args ...interface{}) (url string) {
 	if r == nil {
 		return
 	}
+	srv := s.Servers.Main()
+	scheme := srv.Scheme()
 
-	scheme := "http://"
-	if s.HTTPServer.IsSecure() {
-		scheme = "https://"
-	}
-
-	host := s.HTTPServer.VirtualHost()
+	host := srv.Host()
 	arguments := args[0:]
 
 	// join arrays as arguments
@@ -588,17 +841,64 @@ func (s *Framework) URL(routeName string, args ...interface{}) (url string) {
 	return
 }
 
-// TemplateString executes a template and returns its result as string, useful when you want it for sending rich e-mails
-// returns empty string on error
-func TemplateString(templateFile string, pageContext interface{}, layout ...string) string {
-	return Default.TemplateString(templateFile, pageContext, layout...)
+// AcquireGzip prepares a gzip writer and returns it
+//
+// Note that: each iris station has its own pool
+// see ReleaseGzip
+func (s *Framework) AcquireGzip(w io.Writer) *gzip.Writer {
+	v := s.gzipWriterPool.Get()
+	if v == nil {
+		gzipWriter, err := gzip.NewWriterLevel(w, gzip.DefaultCompression)
+		if err != nil {
+			return nil
+		}
+		return gzipWriter
+	}
+	gzipWriter := v.(*gzip.Writer)
+	gzipWriter.Reset(w)
+	return gzipWriter
 }
 
-// TemplateString executes a template and returns its result as string, useful when you want it for sending rich e-mails
+// ReleaseGzip called when flush/close and put the gzip writer back to the pool
+//
+// Note that: each iris station has its own pool
+// see AcquireGzip
+func (s *Framework) ReleaseGzip(gzipWriter *gzip.Writer) {
+	gzipWriter.Close()
+	s.gzipWriterPool.Put(gzipWriter)
+}
+
+// TemplateString executes a template from the default template engine and returns its result as string, useful when you want it for sending rich e-mails
 // returns empty string on error
-func (s *Framework) TemplateString(templateFile string, pageContext interface{}, layout ...string) string {
-	s.prepareTemplates()
-	res, err := s.templates.RenderString(templateFile, pageContext, layout...)
+func TemplateString(templateFile string, pageContext interface{}, options ...map[string]interface{}) string {
+	return Default.TemplateString(templateFile, pageContext, options...)
+}
+
+// TemplateString executes a template from the default template engine and returns its result as string, useful when you want it for sending rich e-mails
+// returns empty string on error
+func (s *Framework) TemplateString(templateFile string, pageContext interface{}, options ...map[string]interface{}) string {
+	if s.Config.DisableTemplateEngines {
+		return ""
+	}
+	res, err := s.templates.getBy(templateFile).executeToString(templateFile, pageContext, options...)
+	if err != nil {
+		return ""
+	}
+	return res
+}
+
+// ResponseString returns the string of a response engine,
+// does not render it to the client
+// returns empty string on error
+func ResponseString(keyOrContentType string, obj interface{}, options ...map[string]interface{}) string {
+	return Default.ResponseString(keyOrContentType, obj, options...)
+}
+
+// ResponseString returns the string of a response engine,
+// does not render it to the client
+// returns empty string on error
+func (s *Framework) ResponseString(keyOrContentType string, obj interface{}, options ...map[string]interface{}) string {
+	res, err := s.responses.getBy(keyOrContentType).toString(obj, options...)
 	if err != nil {
 		return ""
 	}
@@ -608,21 +908,35 @@ func (s *Framework) TemplateString(templateFile string, pageContext interface{},
 // NewTester Prepares and returns a new test framework based on the api
 // is useful when you need to have more than one test framework for the same iris insttance, otherwise you can use the iris.Tester(t *testing.T)/variable.Tester(t *testing.T)
 func NewTester(api *Framework, t *testing.T) *httpexpect.Expect {
-	api.Config.DisableBanner = true
-	if !api.HTTPServer.IsListening() { // maybe the user called this after .Listen/ListenTLS/ListenUNIX, the tester can be used as standalone (with no running iris instance) or inside a running instance/app
-		api.NoListen()
-		if ok := <-api.Available; !ok {
-			t.Fatal("Unexpected error: server cannot start, please report this as bug!!")
-		}
-		close(api.Available)
+	srv := api.Servers.Main()
+	if srv == nil { // maybe the user called this after .Listen/ListenTLS/ListenUNIX, the tester can be used as standalone (with no running iris instance) or inside a running instance/app
+		srv = api.ListenVirtual(api.Config.Tester.ListeningAddr)
 	}
 
-	handler := api.HTTPServer.Handler
+	opened := api.Servers.GetAllOpened()
+	h := srv.Handler
+	baseURL := srv.FullHost()
+	if len(opened) > 1 {
+		baseURL = ""
+		//we have more than one server, so we will create a handler here and redirect by registered listening addresses
+		h = func(reqCtx *fasthttp.RequestCtx) {
+			for _, s := range opened {
+				if strings.HasPrefix(reqCtx.URI().String(), s.FullHost()) { // yes on :80 should be passed :80 also, this is inneed for multiserver testing
+					s.Handler(reqCtx)
+					break
+				}
+			}
+		}
+	}
+
+	if api.Config.Tester.ExplicitURL {
+		baseURL = ""
+	}
 
 	testConfiguration := httpexpect.Config{
-		BaseURL: api.HTTPServer.FullHost(),
+		BaseURL: baseURL,
 		Client: &http.Client{
-			Transport: httpexpect.NewFastBinder(handler),
+			Transport: httpexpect.NewFastBinder(h),
 			Jar:       httpexpect.NewJar(),
 		},
 		Reporter: httpexpect.NewAssertReporter(t),
@@ -644,7 +958,10 @@ func Tester(t *testing.T) *httpexpect.Expect {
 
 // Tester returns the test framework for this iris insance
 func (s *Framework) Tester(t *testing.T) *httpexpect.Expect {
-	return s.tester(t)
+	if s.testFramework == nil {
+		s.testFramework = NewTester(s, t)
+	}
+	return s.testFramework
 }
 
 // -------------------------------------------------------------------------------------
@@ -652,12 +969,62 @@ func (s *Framework) Tester(t *testing.T) *httpexpect.Expect {
 // ----------------------------------MuxAPI implementation------------------------------
 // -------------------------------------------------------------------------------------
 // -------------------------------------------------------------------------------------
+type (
+	// RouteNameFunc the func returns from the MuxAPi's methods, optionally sets the name of the Route (*route)
+	RouteNameFunc func(string)
+	// MuxAPI the visible api for the serveMux
+	MuxAPI interface {
+		Party(string, ...HandlerFunc) MuxAPI
+		// middleware serial, appending
+		Use(...Handler)
+		UseFunc(...HandlerFunc)
+		// returns itself, because at the most-cases used like .Layout, at the first-line party's declaration
+		Done(...Handler) MuxAPI
+		DoneFunc(...HandlerFunc) MuxAPI
+		//
 
-type muxAPI struct {
-	mux          *serveMux
-	relativePath string
-	middleware   Middleware
-}
+		// main handlers
+		Handle(string, string, ...Handler) RouteNameFunc
+		HandleFunc(string, string, ...HandlerFunc) RouteNameFunc
+		// H_ is used to convert a context.IContext handler func to iris.HandlerFunc, is used only inside iris internal package to avoid import cycles
+		H_(string, string, func(context.IContext)) func(string)
+		API(string, HandlerAPI, ...HandlerFunc)
+
+		// http methods
+		Get(string, ...HandlerFunc) RouteNameFunc
+		Post(string, ...HandlerFunc) RouteNameFunc
+		Put(string, ...HandlerFunc) RouteNameFunc
+		Delete(string, ...HandlerFunc) RouteNameFunc
+		Connect(string, ...HandlerFunc) RouteNameFunc
+		Head(string, ...HandlerFunc) RouteNameFunc
+		Options(string, ...HandlerFunc) RouteNameFunc
+		Patch(string, ...HandlerFunc) RouteNameFunc
+		Trace(string, ...HandlerFunc) RouteNameFunc
+		Any(string, ...HandlerFunc)
+
+		// static content
+		StaticHandler(string, int, bool, bool, []string) HandlerFunc
+		Static(string, string, int) RouteNameFunc
+		StaticFS(string, string, int) RouteNameFunc
+		StaticWeb(string, string, int) RouteNameFunc
+		StaticServe(string, ...string) RouteNameFunc
+		StaticContent(string, string, []byte) func(string)
+		Favicon(string, ...string) RouteNameFunc
+
+		// templates
+		Layout(string) MuxAPI // returns itself
+	}
+
+	muxAPI struct {
+		mux            *serveMux
+		doneMiddleware Middleware
+		apiRoutes      []*route // used to register the .Done middleware
+		relativePath   string
+		middleware     Middleware
+	}
+)
+
+var _ MuxAPI = &muxAPI{}
 
 var (
 	// errAPIContextNotFound returns an error with message: 'From .API: "Context *iris.Context could not be found..'
@@ -665,8 +1032,6 @@ var (
 	// errDirectoryFileNotFound returns an error with message: 'Directory or file %s couldn't found. Trace: +error trace'
 	errDirectoryFileNotFound = errors.New("Directory or file %s couldn't found. Trace: %s")
 )
-
-var _ MuxAPI = &muxAPI{}
 
 // Party is just a group joiner of routes which have the same prefix and share same middleware(s) also.
 // Party can also be named as 'Join' or 'Node' or 'Group' , Party chosen because it has more fun
@@ -687,7 +1052,8 @@ func (api *muxAPI) Party(relativePath string, handlersFn ...HandlerFunc) MuxAPI 
 	middleware := convertToHandlers(handlersFn)
 	// append the parent's +child's handlers
 	middleware = joinMiddleware(api.middleware, middleware)
-	return &muxAPI{relativePath: fullpath, mux: api.mux, middleware: middleware}
+
+	return &muxAPI{relativePath: fullpath, mux: api.mux, apiRoutes: make([]*route, 0), middleware: middleware, doneMiddleware: api.doneMiddleware}
 }
 
 // Use registers Handler middleware
@@ -700,6 +1066,22 @@ func UseFunc(handlersFn ...HandlerFunc) {
 	Default.UseFunc(handlersFn...)
 }
 
+// Done registers Handler 'middleware' the only difference from .Use is that it
+// should be used BEFORE any party route registered or AFTER ALL party's routes have been registered.
+//
+// returns itself
+func Done(handlers ...Handler) MuxAPI {
+	return Default.Done(handlers...)
+}
+
+// DoneFunc registers HandlerFunc 'middleware' the only difference from .Use is that it
+// should be used BEFORE any party route registered or AFTER ALL party's routes have been registered.
+//
+// returns itself
+func DoneFunc(handlersFn ...HandlerFunc) MuxAPI {
+	return Default.DoneFunc(handlersFn...)
+}
+
 // Use registers Handler middleware
 func (api *muxAPI) Use(handlers ...Handler) {
 	api.middleware = append(api.middleware, handlers...)
@@ -708,6 +1090,31 @@ func (api *muxAPI) Use(handlers ...Handler) {
 // UseFunc registers HandlerFunc middleware
 func (api *muxAPI) UseFunc(handlersFn ...HandlerFunc) {
 	api.Use(convertToHandlers(handlersFn)...)
+}
+
+// Done registers Handler 'middleware' the only difference from .Use is that it
+// should be used BEFORE any party route registered or AFTER ALL party's routes have been registered.
+//
+// returns itself
+func (api *muxAPI) Done(handlers ...Handler) MuxAPI {
+	if len(api.apiRoutes) > 0 { // register these middleware on previous-party-defined routes, it called after the party's route methods (Handle/HandleFunc/Get/Post/Put/Delete/...)
+		for i, n := 0, len(api.apiRoutes); i < n; i++ {
+			api.apiRoutes[i].middleware = append(api.apiRoutes[i].middleware, handlers...)
+		}
+	} else {
+		// register them on the doneMiddleware, which will be used on Handle to append these middlweare as the last handler(s)
+		api.doneMiddleware = append(api.doneMiddleware, handlers...)
+	}
+
+	return api
+}
+
+// Done registers HandlerFunc 'middleware' the only difference from .Use is that it
+// should be used BEFORE any party route registered or AFTER ALL party's routes have been registered.
+//
+// returns itself
+func (api *muxAPI) DoneFunc(handlersFn ...HandlerFunc) MuxAPI {
+	return api.Done(convertToHandlers(handlersFn)...)
 }
 
 // Handle registers a route to the server's router
@@ -746,7 +1153,16 @@ func (api *muxAPI) Handle(method string, registedPath string, handlers ...Handle
 	}
 
 	path = strings.Replace(path, "//", "/", -1) // fix the path if double //
-	return api.mux.register([]byte(method), subdomain, path, middleware).setName
+
+	if len(api.doneMiddleware) > 0 {
+		middleware = append(middleware, api.doneMiddleware...) // register the done middleware, if any
+	}
+	r := api.mux.register([]byte(method), subdomain, path, middleware)
+	api.apiRoutes = append(api.apiRoutes, r)
+
+	// should we remove the api.apiRoutes on the .Party (new children party) ?, No, because the user maybe use this party later
+	// should we add to the 'inheritance tree' the api.apiRoutes, No, these are for this specific party only, because the user propably, will have unexpected behavior when using Use/UseFunc, Done/DoneFunc
+	return r.setName
 }
 
 // HandleFunc registers and returns a route with a method string, path string and a handler
@@ -795,7 +1211,14 @@ func API(path string, restAPI HandlerAPI, middleware ...HandlerFunc) {
 func (api *muxAPI) API(path string, restAPI HandlerAPI, middleware ...HandlerFunc) {
 	// here we need to find the registed methods and convert them to handler funcs
 	// methods are collected by method naming:  Get(),GetBy(...), Post(),PostBy(...), Put() and so on
-
+	if len(path) == 0 {
+		path = "/"
+	}
+	if path[0] != slashByte {
+		//  the route's paths always starts with "/", when the client navigates, the router works without "/" also ,
+		// but the developer should always prepend the slash ("/") to register the routes
+		path = "/" + path
+	}
 	typ := reflect.ValueOf(restAPI).Type()
 	contextField, found := typ.FieldByName("Context")
 	if !found {
@@ -839,6 +1262,7 @@ func (api *muxAPI) API(path string, restAPI HandlerAPI, middleware ...HandlerFun
 	// or no, I changed my mind, let all be named parameters and let users to decide what info they need,
 	// using the Context to take more values (post form,url params and so on).-
 
+	paramPrefix := "param"
 	for _, methodName := range AllMethods {
 		methodWithBy := strings.Title(strings.ToLower(methodName)) + "By"
 		if method, found := typ.MethodByName(methodWithBy); found {
@@ -852,9 +1276,9 @@ func (api *muxAPI) API(path string, restAPI HandlerAPI, middleware ...HandlerFun
 
 			for i := 1; i < numInLen; i++ { // from 1 because the first is the 'object'
 				if registedPath[len(registedPath)-1] == slashByte {
-					registedPath += ":param" + strconv.Itoa(i)
+					registedPath += ":" + paramPrefix + strconv.Itoa(i)
 				} else {
-					registedPath += "/:param" + strconv.Itoa(i)
+					registedPath += "/:" + paramPrefix + strconv.Itoa(i)
 				}
 			}
 
@@ -867,9 +1291,16 @@ func (api *muxAPI) API(path string, restAPI HandlerAPI, middleware ...HandlerFun
 					newController.FieldByName("Context").Set(reflect.ValueOf(ctx))
 					args := make([]reflect.Value, paramsLen+1, paramsLen+1)
 					args[0] = newController
-					for i := 0; i < paramsLen; i++ {
-						args[i+1] = reflect.ValueOf(ctx.Params[i].Value)
+					realParamsLen := len(ctx.Params)
+					j := 1
+					for i := 0; i < realParamsLen; i++ { // here we don't looping with the len we are already known by the 'API' because maybe there is a party/or/path witch accepting parameters before, see https://github.com/kataras/iris/issues/293
+						if strings.HasPrefix(ctx.Params[i].Key, paramPrefix) {
+							args[j] = reflect.ValueOf(ctx.Params[i].Value)
+
+							j++ // the first parameter is the context, other are the path parameters, j++ to be align with (API's registered)paramsLen
+						}
 					}
+
 					methodFunc.Call(args)
 				})
 				// register route
@@ -1368,7 +1799,7 @@ func (api *muxAPI) Favicon(favPath string, requestPath ...string) RouteNameFunc 
 //
 func (api *muxAPI) Layout(tmplLayoutFile string) MuxAPI {
 	api.UseFunc(func(ctx *Context) {
-		ctx.Set(config.TemplateLayoutContextKey, tmplLayoutFile)
+		ctx.Set(TemplateLayoutContextKey, tmplLayoutFile)
 		ctx.Next()
 	})
 	return api

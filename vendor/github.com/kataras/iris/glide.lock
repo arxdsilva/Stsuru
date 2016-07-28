@@ -59,7 +59,7 @@ imports:
   subpackages:
   - github.com\kataras\cli
 - name: github.com/kataras/rizla
-  version: 55c8df3f037436b912c80e94449129bac9a5d24d
+  version: e525ea809fd22f54c5415ddfee364543d06d95a8
   subpackages:
   - github.com\kataras\rizla\rizla
 - name: github.com/klauspost/compress
@@ -101,7 +101,7 @@ imports:
   subpackages:
   - github.com\valyala\bytebufferpool
 - name: github.com/valyala/fasthttp
-  version: 97d96cb3b7feaf22ce9b813313cd8ae20b3589b9
+  version: 45697fe30a130ec6a54426a069c82f3abe76b63d
   subpackages:
   - github.com\valyala\fasthttp
   - github.com\valyala\fasthttp\fasthttpadaptor
