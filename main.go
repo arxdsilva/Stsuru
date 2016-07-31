@@ -51,9 +51,8 @@ func addLink(ctx *iris.Context) {
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
 	linkshort := fmt.Sprintf("tsu.ru/%x", hash)
-
-	linha := &lines{Number: 0, Link: link, Short: linkshort}
-
+	number := 0
+	linha := &lines{Number: number, Link: link, Short: linkshort}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
@@ -67,5 +66,17 @@ func addLink(ctx *iris.Context) {
 }
 
 func removeLink(ctx *iris.Context) {
+	a := ctx.PostValue("remove")
+	fmt.Print(a)
+	// linha := &lines{Number: number, Link: link, Short: linkshort}
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	if err != nil {
+		panic(err)
+	}
+	err = session.DB("tsuru").C("links").Remove(a)
+	if err != nil {
+		panic(err)
+	}
 	ctx.Redirect("/")
 }

@@ -22,6 +22,14 @@ type (
 	}
 )
 
+const (
+	templateErrorMessage = `
+	<html><body>
+	<h2>Error in template</h2>
+	<h3>%s</h3>
+	</body></html>`
+)
+
 // New creates and returns a Pongo template engine
 func New(cfg ...Config) *Engine {
 	c := DefaultConfig()
@@ -83,6 +91,11 @@ func (p *Engine) LoadDirectory(dir string, extension string) (templateErr error)
 				}
 				name := filepath.ToSlash(rel)
 				p.templateCache[name], templateErr = set.FromString(string(buf))
+
+				if templateErr != nil && p.Config.DebugTemplates {
+					p.templateCache[name], _ = set.FromString(
+						fmt.Sprintf(templateErrorMessage, templateErr.Error()))
+				}
 			}
 
 		}

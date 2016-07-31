@@ -10,7 +10,6 @@ import (
 	"mime/multipart"
 	"net"
 	"os"
-	"runtime/debug"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -223,8 +222,8 @@ type Server struct {
 	// if set to true.
 	//
 	// Try enabling this option only if the server consumes too much memory
-	// serving mostly idle keep-alive connections (more than 1M concurrent
-	// connections). This may reduce memory usage by up to 50%.
+	// serving mostly idle keep-alive connections. This may reduce memory
+	// usage by more than 50%.
 	//
 	// Aggressive memory usage reduction is disabled by default.
 	ReduceMemoryUsage bool
@@ -479,6 +478,17 @@ func (ctx *RequestCtx) UserValue(key string) interface{} {
 // under the given key.
 func (ctx *RequestCtx) UserValueBytes(key []byte) interface{} {
 	return ctx.userValues.GetBytes(key)
+}
+
+// VisitUserValues calls visitor for each existing userValue.
+//
+// visitor must not retain references to key and value after returning.
+// Make key and/or value copies if you need storing them after returning.
+func (ctx *RequestCtx) VisitUserValues(visitor func([]byte, interface{})) {
+	for i, n := 0, len(ctx.userValues); i < n; i++ {
+		kv := &ctx.userValues[i]
+		visitor(kv.key, kv.value)
+	}
 }
 
 // IsTLS returns true if the underlying connection is tls.Conn.
@@ -1660,20 +1670,13 @@ func (s *Server) updateWriteDeadline(c net.Conn, ctx *RequestCtx, lastDeadlineTi
 
 func hijackConnHandler(r io.Reader, c net.Conn, s *Server, h HijackHandler) {
 	hjc := s.acquireHijackConn(r, c)
-
-	defer func() {
-		if r := recover(); r != nil {
-			s.logger().Printf("panic on hijacked conn: %s\nStack trace:\n%s", r, debug.Stack())
-		}
-
-		if br, ok := r.(*bufio.Reader); ok {
-			releaseReader(s, br)
-		}
-		c.Close()
-		s.releaseHijackConn(hjc)
-	}()
-
 	h(hjc)
+
+	if br, ok := r.(*bufio.Reader); ok {
+		releaseReader(s, br)
+	}
+	c.Close()
+	s.releaseHijackConn(hjc)
 }
 
 func (s *Server) acquireHijackConn(r io.Reader, c net.Conn) *hijackConn {
@@ -1813,11 +1816,15 @@ func (s *Server) acquireCtx(c net.Conn) *RequestCtx {
 	v := s.ctxPool.Get()
 	var ctx *RequestCtx
 	if v == nil {
-		v = &RequestCtx{
+		ctx = &RequestCtx{
 			s: s,
 		}
+		keepBodyBuffer := !s.ReduceMemoryUsage
+		ctx.Request.keepBodyBuffer = keepBodyBuffer
+		ctx.Response.keepBodyBuffer = keepBodyBuffer
+	} else {
+		ctx = v.(*RequestCtx)
 	}
-	ctx = v.(*RequestCtx)
 	ctx.c = c
 	return ctx
 }
