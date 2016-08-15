@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-
 	"crypto/md5"
+	"fmt"
 	"io"
 
 	"github.com/iris-contrib/template/django"
@@ -21,19 +20,24 @@ type lines struct {
 func main() {
 	iris.UseTemplate(django.New()).Directory("./templates", ".html")
 	iris.Post("/link/add", addLink)
-	iris.Post("/link/remove", removeLink)
+	iris.Get("/remove/link", remover)
 	iris.Get("/", homer)
 	iris.Listen(":8080")
 }
 
+// Faz display da pagina home e carrega o html/DB
 func homer(ctx *iris.Context) {
+	// cria um array de dicionarios do(a) tipo(estrutura) 'lines'
 	data := []lines{}
+
+	// DB conn
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
 
+	// DB display all data
 	c := session.DB("tsuru").C("links")
 	err = c.Find(bson.M{}).All(&data)
 	if err != nil {
@@ -47,6 +51,13 @@ func homer(ctx *iris.Context) {
 
 func addLink(ctx *iris.Context) {
 	link := ctx.FormValueString("user_link")
+
+	// prevents empty links
+	if link == "" {
+		ctx.Redirect("/")
+		return
+	}
+
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -65,18 +76,27 @@ func addLink(ctx *iris.Context) {
 	ctx.Redirect("/")
 }
 
-func removeLink(ctx *iris.Context) {
-	a := ctx.PostValue("remove")
-	fmt.Print(a)
+func remover(ctx *iris.Context) {
+	a := ctx.PostValues("button")
+	fmt.Sprintln(a)
 	// linha := &lines{Number: number, Link: link, Short: linkshort}
+	// conexao com o db
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
-	err = session.DB("tsuru").C("links").Remove(a)
+	// deleta do banco o valor 'a' recebido
+	err = session.DB("tsuru").C("links").Remove(bson.M{"link": a})
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+		fmt.Println(bson.M{"link": a})
+		ctx.NotFound()
 	}
+
 	ctx.Redirect("/")
+}
+
+func notFoundHandler() {
+
 }
