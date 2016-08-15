@@ -77,8 +77,8 @@ func addLink(ctx *iris.Context) {
 }
 
 func remover(ctx *iris.Context) {
-	a := ctx.PostValues("button")
-	fmt.Sprintln(a)
+	a := ctx.Param("remover")
+	fmt.Println(a)
 	// linha := &lines{Number: number, Link: link, Short: linkshort}
 	// conexao com o db
 	session, err := mgo.Dial("localhost")
@@ -93,10 +93,5 @@ func remover(ctx *iris.Context) {
 		fmt.Println(bson.M{"link": a})
 		ctx.NotFound()
 	}
-
 	ctx.Redirect("/")
-}
-
-func notFoundHandler() {
-
 }
