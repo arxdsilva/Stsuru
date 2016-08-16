@@ -25,19 +25,15 @@ func main() {
 	iris.Listen(":8080")
 }
 
-// Faz display da pagina home e carrega o html/DB
 func homer(ctx *iris.Context) {
-	// cria um slice de dicionarios do(a) tipo(estrutura) 'lines'
 	data := []lines{}
 
-	// DB conn
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
 
-	// DB display all data
 	c := session.DB("tsuru").C("links")
 	err = c.Find(bson.M{}).All(&data)
 	if err != nil {
@@ -52,13 +48,11 @@ func homer(ctx *iris.Context) {
 func addLink(ctx *iris.Context) {
 	link := ctx.FormValueString("user_link")
 
-	// prevents empty links
 	if link == "" {
 		ctx.Redirect("/")
 		return
 	}
 
-	// inicia criacao e insercao do hash na url
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -78,16 +72,13 @@ func addLink(ctx *iris.Context) {
 }
 
 func remover(ctx *iris.Context) {
-	// parsear na url > pegar id p/ query no mongo
-	// como fazer o handler funcionar?
-
 	id := ctx.Param("id")
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
-	// deleta do banco o valor 'id' recebido
+
 	c := session.DB("tsuru").C("links")
 	err = c.Remove(bson.M{"link": id})
 	if err != nil {
@@ -96,11 +87,15 @@ func remover(ctx *iris.Context) {
 	ctx.Redirect("/")
 }
 
-func redirect(ctx *iris.Context, id string) {
-	// id := ctx.Param("id")
-	// session, err := mgo.Dial("localhost")
-	// defer session.Close()
-	// if err != nil {
-	// 	panic(err)
-	// }
+func redirect(ctx *iris.Context) {
+	id := ctx.Param("id")
+
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	if err != nil {
+		panic(err)
+	}
+	c := session.DB("tsuru").C("links")
+	e := c.Find(bson.M{"link": id})
+	// ctx.Redirect(neulink)
 }
