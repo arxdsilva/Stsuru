@@ -12,22 +12,22 @@ import (
 )
 
 type lines struct {
-	Number int
-	Link   string
-	Short  string
+	Link  string
+	Short string
 }
 
 func main() {
 	iris.UseTemplate(django.New()).Directory("./templates", ".html")
 	iris.Post("/link/add", addLink)
-	iris.Get("/remove/link", remover)
+	iris.Get("/remove/link/:id", remover)
 	iris.Get("/", homer)
+	iris.Get("/:id", redirect)
 	iris.Listen(":8080")
 }
 
 // Faz display da pagina home e carrega o html/DB
 func homer(ctx *iris.Context) {
-	// cria um array de dicionarios do(a) tipo(estrutura) 'lines'
+	// cria um slice de dicionarios do(a) tipo(estrutura) 'lines'
 	data := []lines{}
 
 	// DB conn
@@ -58,12 +58,13 @@ func addLink(ctx *iris.Context) {
 		return
 	}
 
+	// inicia criacao e insercao do hash na url
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
-	linkshort := fmt.Sprintf("tsu.ru/%x", hash)
-	number := 0
-	linha := &lines{Number: number, Link: link, Short: linkshort}
+	linkshort := fmt.Sprintf("tsu.ru:8080/%x", hash)
+
+	linha := &lines{Link: link, Short: linkshort}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
@@ -77,21 +78,29 @@ func addLink(ctx *iris.Context) {
 }
 
 func remover(ctx *iris.Context) {
-	a := ctx.Param("remover")
-	fmt.Println(a)
-	// linha := &lines{Number: number, Link: link, Short: linkshort}
-	// conexao com o db
+	// parsear na url > pegar id p/ query no mongo
+	// como fazer o handler funcionar?
+
+	id := ctx.Param("id")
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
 		panic(err)
 	}
-	// deleta do banco o valor 'a' recebido
-	err = session.DB("tsuru").C("links").Remove(bson.M{"link": a})
+	// deleta do banco o valor 'id' recebido
+	c := session.DB("tsuru").C("links")
+	err = c.Remove(bson.M{"link": id})
 	if err != nil {
-		fmt.Println(err.Error())
-		fmt.Println(bson.M{"link": a})
-		ctx.NotFound()
+		panic(err)
 	}
 	ctx.Redirect("/")
+}
+
+func redirect(ctx *iris.Context, id string) {
+	// id := ctx.Param("id")
+	// session, err := mgo.Dial("localhost")
+	// defer session.Close()
+	// if err != nil {
+	// 	panic(err)
+	// }
 }

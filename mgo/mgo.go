@@ -25,6 +25,7 @@ type Pokemon struct {
 	Type string
 }
 
+// InitDB ,,,,,
 func InitDB() *mgo.Session {
 	session, err := mgo.Dial("localhost")
 	if err != nil {
@@ -33,11 +34,13 @@ func InitDB() *mgo.Session {
 	return session
 }
 
+// InitSession ,,,,,
 func InitSession(s *mgo.Session, db, collection string) *mgo.Collection {
 	c := s.DB(db).C(collection)
 	return c
 }
 
+// InsertP ,,,,,
 func InsertP(c *mgo.Collection, n string, cp int, hp int, tp string) {
 	err := c.Insert(
 		&Pokemon{n, cp, hp, tp},
@@ -47,6 +50,7 @@ func InsertP(c *mgo.Collection, n string, cp int, hp int, tp string) {
 	}
 }
 
+// ReadDB ,,,,,
 func ReadDB(c *mgo.Collection) {
 	result := []Pokemon{}
 	err := c.Find(bson.M{}).All(&result)
@@ -56,6 +60,7 @@ func ReadDB(c *mgo.Collection) {
 	fmt.Println(result)
 }
 
+// DeleteDB ,,,,,
 func DeleteDB(c *mgo.Collection, n string) {
 	_, err := c.RemoveAll(bson.M{})
 	if err != nil {
@@ -63,6 +68,7 @@ func DeleteDB(c *mgo.Collection, n string) {
 	}
 }
 
+// CloseDB ,,,,,
 func CloseDB(s *mgo.Session) {
 	s.Close()
 }

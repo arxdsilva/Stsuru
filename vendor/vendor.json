@@ -245,6 +245,12 @@
 			"revisionTime": "2016-06-15T09:26:46Z"
 		},
 		{
+			"checksumSHA1": "9YFWngSdTTg55vxnhuEfJHSFMHI=",
+			"path": "github.com/revel/cmd/revel",
+			"revision": "62fc677f3a4043183ad83ccb9cc32165e91dc72e",
+			"revisionTime": "2016-07-22T00:24:26Z"
+		},
+		{
 			"checksumSHA1": "JdYdBoNxMR+CDqTfs78cQmY8JtI=",
 			"path": "github.com/russross/blackfriday",
 			"revision": "93622da34e54fb6529bfb7c57e710f37a8d9cbd8",
