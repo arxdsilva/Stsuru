@@ -27,10 +27,14 @@
       <tbody>
         {% for e in array %}
         <tr>
-          <td>{{ e.Link }}</td>
-          <td>{{ e.Short }}</td>
           <td>
-            <a href="/remove/link/{{ e.Link }}">X</a>
+            <a href="{{ e.Link }}">{{ e.Link }}</a>
+            </td>
+          <td>
+            <a href="{{ e.Hash }}">{{ e.Short }}</a>
+          </td>
+          <td>
+            <a href="/remove/link/{{ e.Hash }}">X</a>
           </td>
         </tr>
         {% endfor %}

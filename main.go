@@ -7,27 +7,28 @@ import (
 
 	"github.com/iris-contrib/template/django"
 	"github.com/kataras/iris"
-	"github.com/tsuru/Stsuru/solver"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+  "strings"
 )
 
-type Lines struct {
+type lines struct {
 	Link  string
 	Short string
+	Hash  string
 }
 
 func main() {
 	iris.UseTemplate(django.New()).Directory("./templates", ".html")
 	iris.Post("/link/add", addLink)
-	iris.Get("/remove/link/:id", remover)
+	iris.Get("/remove/link/*id", remover)
+	iris.Get("/*id", linkSolver)
 	iris.Get("/", homer)
-	iris.Get("/:id", solver.LinkSolver)
 	iris.Listen(":8080")
 }
 
 func homer(ctx *iris.Context) {
-	data := []Lines{}
+	data := []lines{}
 
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
@@ -58,8 +59,9 @@ func addLink(ctx *iris.Context) {
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
 	linkshort := fmt.Sprintf("tsu.ru:8080/%x", hash)
+	dbHash := fmt.Sprintf("/%x", hash)
 
-	linha := &Lines{Link: link, Short: linkshort}
+	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
@@ -81,9 +83,26 @@ func remover(ctx *iris.Context) {
 	}
 
 	c := session.DB("tsuru").C("links")
-	err = c.Remove(bson.M{"link": id})
+	err = c.Remove(bson.M{"hash": id})
 	if err != nil {
 		panic(err)
 	}
 	ctx.Redirect("/")
+}
+
+func linkSolver(ctx *iris.Context) {
+	id := ctx.Param("id")
+	dbData := lines{}
+	// id = fmt.Sprintf("%s", id)
+
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	if err != nil {
+		panic(err)
+	}
+	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
+	if c != nil {
+		ctx.Redirect("/")
+	}
+	ctx.Redirect(dbData.Link)
 }
