@@ -22,7 +22,7 @@ func main() {
 	iris.Post("/link/add", addLink)
 	iris.Get("/remove/link/:id", remover)
 	iris.Get("/", homer)
-	iris.Get("/:id", solver.Redirect)
+	iris.Get("/:id", solver.LinkSolver)
 	iris.Listen(":8080")
 }
 

@@ -9,7 +9,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-func redirect(ctx *iris.Context) {
+func LinkSolver(ctx *iris.Context) {
 	id := ctx.Param("id")
 	dbData := []main.Lines{}
 
