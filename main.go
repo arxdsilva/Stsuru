@@ -7,11 +7,12 @@ import (
 
 	"github.com/iris-contrib/template/django"
 	"github.com/kataras/iris"
+	"github.com/tsuru/Stsuru/solver"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
-type lines struct {
+type Lines struct {
 	Link  string
 	Short string
 }
@@ -21,12 +22,12 @@ func main() {
 	iris.Post("/link/add", addLink)
 	iris.Get("/remove/link/:id", remover)
 	iris.Get("/", homer)
-	iris.Get("/:id", redirect)
+	iris.Get("/:id", solver.Redirect)
 	iris.Listen(":8080")
 }
 
 func homer(ctx *iris.Context) {
-	data := []lines{}
+	data := []Lines{}
 
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
@@ -58,7 +59,7 @@ func addLink(ctx *iris.Context) {
 	hash := string(h.Sum(nil))
 	linkshort := fmt.Sprintf("tsu.ru:8080/%x", hash)
 
-	linha := &lines{Link: link, Short: linkshort}
+	linha := &Lines{Link: link, Short: linkshort}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
@@ -85,17 +86,4 @@ func remover(ctx *iris.Context) {
 		panic(err)
 	}
 	ctx.Redirect("/")
-}
-
-func redirect(ctx *iris.Context) {
-	id := ctx.Param("id")
-
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
-	if err != nil {
-		panic(err)
-	}
-	c := session.DB("tsuru").C("links")
-	e := c.Find(bson.M{"link": id})
-	// ctx.Redirect(neulink)
 }
