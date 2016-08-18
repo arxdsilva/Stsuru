@@ -69,23 +69,25 @@
   <table class="table table-hover">
     <thead>
       <tr>
-        <th>#</th>
         <th>Link</th>
         <th>Short</th>
         <th>Remove</th>
       </tr>
     </thead>
     <tbody>
-      <tr>
-        <th scope="row">{{ Number }}</th>
-        <td>{{ Link }}</td>
-        <td>{{ Short }}</td>
-        <td>
-          <a href="">
-              <button type="button" class="btn btn-danger">Remove</button>
-          </a>
-        </td>
-      </tr>
+      {% for e in array %}
+        <tr>
+          <td>
+            <a href="{{ e.Link }}">{{ e.Link }}</a>
+          </td>
+          <td>
+            <a href="{{ e.Hash }}">{{ e.Short }}</a>
+          </td>
+          <td>
+            <a href="/remove/link/{{ e.Hash }}">X</a>
+          </td>
+        </tr>
+      {% endfor %}
     </tbody>
   </table>
 </div>

@@ -9,7 +9,6 @@ import (
 	"github.com/kataras/iris"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-  "strings"
 )
 
 type lines struct {
@@ -93,7 +92,7 @@ func remover(ctx *iris.Context) {
 func linkSolver(ctx *iris.Context) {
 	id := ctx.Param("id")
 	dbData := lines{}
-	// id = fmt.Sprintf("%s", id)
+	id = fmt.Sprintf("%s", id)
 
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
