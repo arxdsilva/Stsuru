@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
+	"log"
 
 	"github.com/iris-contrib/template/django"
 	"github.com/kataras/iris"
@@ -32,13 +33,13 @@ func homer(ctx *iris.Context) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	c := session.DB("tsuru").C("links")
 	err = c.Find(bson.M{}).All(&data)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	context := map[string]interface{}{}
@@ -48,10 +49,8 @@ func homer(ctx *iris.Context) {
 
 func addLink(ctx *iris.Context) {
 	link := ctx.FormValueString("user_link")
-
 	if link == "" {
 		ctx.Redirect("/")
-		return
 	}
 
 	h := md5.New()
@@ -64,11 +63,11 @@ func addLink(ctx *iris.Context) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	err = session.DB("tsuru").C("links").Insert(linha)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	ctx.Redirect("/")
 }
@@ -78,13 +77,12 @@ func remover(ctx *iris.Context) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
-
 	c := session.DB("tsuru").C("links")
 	err = c.Remove(bson.M{"hash": id})
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	ctx.Redirect("/")
 }
@@ -97,7 +95,7 @@ func linkSolver(ctx *iris.Context) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
 	if c != nil {
