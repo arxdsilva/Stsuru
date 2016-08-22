@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 
+	"github.com/gorilla/mux"
 	"github.com/iris-contrib/template/django"
 	"github.com/kataras/iris"
 	"gopkg.in/mgo.v2"
@@ -19,15 +21,18 @@ type lines struct {
 }
 
 func main() {
+	r := mux.NewRouter()
 	iris.UseTemplate(django.New()).Directory("./templates", ".html")
+	r.HandleFunc("/", homer)
+
 	iris.Post("/link/add", addLink)
 	iris.Get("/remove/link/:id", remover)
 	iris.Get("/red/:id", linkSolver)
-	iris.Get("/", homer)
+	// iris.Get("/", homer)
 	iris.Listen(":8080")
 }
 
-func homer(ctx *iris.Context) {
+func homer(w http.ResponseWriter, r *http.Request) {
 	data := []lines{}
 
 	session, err := mgo.Dial("localhost")
