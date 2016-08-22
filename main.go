@@ -20,8 +20,8 @@ type lines struct {
 func main() {
 	iris.UseTemplate(django.New()).Directory("./templates", ".html")
 	iris.Post("/link/add", addLink)
-	iris.Get("/remove/link/*id", remover)
-	iris.Get("/*id", linkSolver)
+	iris.Get("/remove/link/:id", remover)
+	iris.Get("/red/:id", linkSolver)
 	iris.Get("/", homer)
 	iris.Listen(":8080")
 }
@@ -57,8 +57,8 @@ func addLink(ctx *iris.Context) {
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
-	linkshort := fmt.Sprintf("tsu.ru:8080/%x", hash)
-	dbHash := fmt.Sprintf("/%x", hash)
+	linkshort := fmt.Sprintf("http://tsu.ru:8080/%x", hash)
+	dbHash := fmt.Sprintf("%x", hash)
 
 	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
