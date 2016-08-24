@@ -8,8 +8,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/iris-contrib/template/django"
-	"github.com/kataras/iris"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -22,14 +20,13 @@ type lines struct {
 
 func main() {
 	r := mux.NewRouter()
-	iris.UseTemplate(django.New()).Directory("./templates", ".html")
+	// iris.UseTemplate(django.New()).Directory("./templates", ".html")
 	r.HandleFunc("/", homer)
-
-	iris.Post("/link/add", addLink)
-	iris.Get("/remove/link/:id", remover)
-	iris.Get("/red/:id", linkSolver)
-	// iris.Get("/", homer)
-	iris.Listen(":8080")
+	r.HandleFunc("/links", addLink)
+	r.HandleFunc("/links/remove/{id}", removeLink)
+	r.HandleFunc("/links/{id}", linkSolver)
+	http.Handle("/", r)
+	http.ListenAndServe("tsu.ru:8080", nil)
 }
 
 func homer(w http.ResponseWriter, r *http.Request) {
@@ -49,13 +46,13 @@ func homer(w http.ResponseWriter, r *http.Request) {
 
 	context := map[string]interface{}{}
 	context["array"] = data
-	ctx.Render("mypage.html", context)
+	// ctx.Render("mypage.html", context)
 }
 
-func addLink(ctx *iris.Context) {
-	link := ctx.FormValueString("user_link")
+func addLink(w http.ResponseWriter, r *http.Request) {
+	// link := ctx.FormValueString("user_link")
 	if link == "" {
-		ctx.Redirect("/")
+		// ctx.Redirect("/")
 	}
 
 	h := md5.New()
@@ -74,11 +71,12 @@ func addLink(ctx *iris.Context) {
 	if err != nil {
 		log.Panic(err)
 	}
-	ctx.Redirect("/")
+	// ctx.Redirect("/")
 }
 
-func remover(ctx *iris.Context) {
-	id := ctx.Param("id")
+func removeLink(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)
+	// id := ctx.Param("id")
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	if err != nil {
@@ -89,11 +87,11 @@ func remover(ctx *iris.Context) {
 	if err != nil {
 		log.Panic(err)
 	}
-	ctx.Redirect("/")
+	// ctx.Redirect("/")
 }
 
-func linkSolver(ctx *iris.Context) {
-	id := ctx.Param("id")
+func linkSolver(w http.ResponseWriter, r *http.Request) {
+	// id := ctx.Param("id")
 	dbData := lines{}
 	id = fmt.Sprintf("%s", id)
 
@@ -104,7 +102,7 @@ func linkSolver(ctx *iris.Context) {
 	}
 	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
 	if c != nil {
-		ctx.Redirect("/")
+		// ctx.Redirect("/")
 	}
-	ctx.Redirect(dbData.Link)
+	// ctx.Redirect(dbData.Link)
 }
