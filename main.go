@@ -25,6 +25,7 @@ func main() {
 	r.HandleFunc("/", home)
 	r.HandleFunc("/link/add", addLink)
 	r.HandleFunc("/link/remove/{id}", removeLink)
+	r.HandleFunc("/redirect/{id}", linkSolver)
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
@@ -93,18 +94,18 @@ func removeLink(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// func linkSolver(w http.ResponseWriter, r *http.Request) {
-// 	// id := ctx.Param("id")
-// 	dbData := lines{}
-// 	// id = fmt.Sprintf("%s", id)
-//
-// 	session, err := mgo.Dial("localhost")
-// 	defer session.Close()
-// 	checkError(err)
-//
-// 	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
-// 	if c != nil {
-// 		http.Redirect(w, r, "/", http.StatusFound)
-// 	}
-// 	// ctx.Redirect(dbData.Link)
-// }
+func linkSolver(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)
+	dbData := lines{}
+	idInfo := id["id"]
+
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	checkError(err)
+
+	c := session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
+	if c != nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+	}
+	http.Redirect(w, r, dbData.Link, http.StatusFound)
+}
