@@ -22,15 +22,16 @@ type lines struct {
 
 func main() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", home)
-	r.HandleFunc("/link/add", addLink)
-	r.HandleFunc("/link/remove/{id}", removeLink)
-	r.HandleFunc("/redirect/{id}", linkSolver)
+	r.HandleFunc("/", Home)
+	r.HandleFunc("/link/add", AddLink)
+	r.HandleFunc("/link/remove/{id}", RemoveLink)
+	r.HandleFunc("/redirect/{id}", LinkSolver)
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
 
-func home(w http.ResponseWriter, r *http.Request) {
+// Home ...
+func Home(w http.ResponseWriter, r *http.Request) {
 	Data := []lines{}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
@@ -46,7 +47,8 @@ func home(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, Data)
 }
 
-func addLink(w http.ResponseWriter, r *http.Request) {
+// AddLink ...
+func AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
 
@@ -54,7 +56,6 @@ func addLink(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 
-	// cria o Hash
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -79,7 +80,8 @@ func checkError(err error) {
 	return
 }
 
-func removeLink(w http.ResponseWriter, r *http.Request) {
+// RemoveLink ...
+func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
 
@@ -94,7 +96,8 @@ func removeLink(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func linkSolver(w http.ResponseWriter, r *http.Request) {
+// LinkSolver ...
+func LinkSolver(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	dbData := lines{}
 	idInfo := id["id"]
