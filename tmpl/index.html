@@ -24,6 +24,19 @@
         </tr>
       </thead>
       <tbody>
+        {{ range . }}
+        <tr>
+          <td>
+            <a href="{{ .Link }}">{{ .Link }}</a>
+            </td>
+          <td>
+            <a href="/red/{{ .Hash }}">{{ .Short }}</a>
+          </td>
+          <td>
+            <a href="/link/remove/{{ .Hash }}">X</a>
+          </td>
+        </tr>
+        {{ end }}
       </tbody>
     </table>
   </div>

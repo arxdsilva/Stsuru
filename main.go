@@ -24,41 +24,31 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", home)
 	r.HandleFunc("/link/add", addLink)
+	r.HandleFunc("/link/remove", removeLink)
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
 
 func home(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("method:", r.Method, " home")
-	t, err := template.ParseFiles("index.html")
-	if err != nil {
-		log.Panic(err)
-	}
-
-	t.Execute(w, nil)
-	data := []lines{}
+	Data := []lines{}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
-	if err != nil {
-		log.Panic(err)
-	}
+	checkError(err)
 
 	c := session.DB("tsuru").C("links")
-	err = c.Find(bson.M{}).All(&data)
-	if err != nil {
-		log.Panic(err)
-	}
+	err = c.Find(bson.M{}).All(&Data)
+	checkError(err)
 
-	context := map[string]interface{}{}
-	context["array"] = data
+	t, err := template.ParseFiles("tmpl/index.html")
+	checkError(err)
+
+	t.Execute(w, Data)
 }
 
 func addLink(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("method:", r.Method, " add")
 	r.ParseForm()
-	fmt.Println(r.Form)
-
 	link := r.Form["user_link"][0]
+
 	if link == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
@@ -73,33 +63,35 @@ func addLink(w http.ResponseWriter, r *http.Request) {
 	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
-	if err != nil {
-		log.Panic(err)
-	}
+	checkError(err)
+
 	err = session.DB("tsuru").C("links").Insert(linha)
-	if err != nil {
-		log.Panic(err)
-	}
+	checkError(err)
+
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-//
-// func removeLink(w http.ResponseWriter, r *http.Request) {
-// 	id := mux.Vars(r)
-// 	// id := ctx.Param("id")
-// 	session, err := mgo.Dial("localhost")
-// 	defer session.Close()
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-// 	c := session.DB("tsuru").C("links")
-// 	err = c.Remove(bson.M{"hash": id})
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
-// 	// ctx.Redirect("/")
-// }
-//
+func checkError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+	return
+}
+
+func removeLink(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)
+
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	checkError(err)
+
+	c := session.DB("tsuru").C("links")
+	err = c.Remove(bson.M{"hash": id})
+	checkError(err)
+
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
 // func linkSolver(w http.ResponseWriter, r *http.Request) {
 // 	// id := ctx.Param("id")
 // 	dbData := lines{}
@@ -107,12 +99,11 @@ func addLink(w http.ResponseWriter, r *http.Request) {
 //
 // 	session, err := mgo.Dial("localhost")
 // 	defer session.Close()
-// 	if err != nil {
-// 		log.Panic(err)
-// 	}
+// 	checkError(err)
+//
 // 	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
 // 	if c != nil {
-// 		// ctx.Redirect("/")
+// 		http.Redirect(w, r, "/", http.StatusFound)
 // 	}
 // 	// ctx.Redirect(dbData.Link)
 // }
