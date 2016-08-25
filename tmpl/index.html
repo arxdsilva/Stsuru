@@ -33,7 +33,9 @@
             <a href="/red/{{ .Hash }}">{{ .Short }}</a>
           </td>
           <td>
-            <a href="/link/remove/{{ .Hash }}">X</a>
+            <a href="/link/remove/{{ .Hash }}">
+              <img src="out/img/trash-48.png">
+            </a>
           </td>
         </tr>
         {{ end }}

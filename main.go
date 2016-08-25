@@ -24,7 +24,7 @@ func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", home)
 	r.HandleFunc("/link/add", addLink)
-	r.HandleFunc("/link/remove", removeLink)
+	r.HandleFunc("/link/remove/{id}", removeLink)
 	http.Handle("/", r)
 	http.ListenAndServe(":8080", nil)
 }
@@ -80,13 +80,14 @@ func checkError(err error) {
 
 func removeLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
+	idInfo := id["id"]
 
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
 
 	c := session.DB("tsuru").C("links")
-	err = c.Remove(bson.M{"hash": id})
+	err = c.Remove(bson.M{"hash": idInfo})
 	checkError(err)
 
 	http.Redirect(w, r, "/", http.StatusFound)
