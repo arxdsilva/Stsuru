@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/arxdsilva/Stsuru.svg?branch=master)](https://travis-ci.org/arxdsilva/Stsuru)
+[![Build Status](https://travis-ci.org/ArxdSilva/Stsuru.svg?branch=master)](https://travis-ci.org/ArxdSilva/Stsuru)
 
 # Stsuru
 
