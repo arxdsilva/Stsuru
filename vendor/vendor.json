@@ -28,10 +28,10 @@
 			"revisionTime": "2016-07-19T20:45:16Z"
 		},
 		{
-			"checksumSHA1": "rbJzKkkLXx3KmAo3e+cODbJw4B8=",
+			"checksumSHA1": "WjBZSW7p3FYbAMPHQf8JT4QbBPc=",
 			"path": "github.com/flosch/pongo2",
-			"revision": "7f5515449ea9bbeb00256d9cbb654c556e7d0146",
-			"revisionTime": "2016-03-15T18:30:58Z"
+			"revision": "22499f94d3d56c7238591344a6902715d0b8fbbf",
+			"revisionTime": "2016-08-13T17:05:23Z"
 		},
 		{
 			"checksumSHA1": "bnOeTmDN6UfzLWaifmbPnAH2yWs=",
@@ -62,6 +62,18 @@
 			"path": "github.com/google/go-querystring/query",
 			"revision": "9235644dd9e52eeae6fa48efd539fdc351a0af53",
 			"revisionTime": "2016-03-11T01:20:12Z"
+		},
+		{
+			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
+			"path": "github.com/gorilla/context",
+			"revision": "08b5f424b9271eedf6f9f0ce86cb9396ed337a42",
+			"revisionTime": "2016-08-17T18:46:32Z"
+		},
+		{
+			"checksumSHA1": "TfZ8ulM+No3vdOTjK6qF1y9yVlI=",
+			"path": "github.com/gorilla/mux",
+			"revision": "cf79e51a62d8219d52060dfc1b4e810414ba2d15",
+			"revisionTime": "2016-08-16T18:45:31Z"
 		},
 		{
 			"checksumSHA1": "hwGdeQbcfc2RvIQS5wAaYRKJDd4=",

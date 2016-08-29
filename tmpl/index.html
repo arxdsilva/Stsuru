@@ -10,7 +10,7 @@
       <input type="text" name="user_link">
     </div>
     <div class="button">
-        <button type="submit">Post</button>
+        <button type="submit" value="link">Post</button>
     </div>
   </form>
 
@@ -24,19 +24,21 @@
         </tr>
       </thead>
       <tbody>
-        {% for e in array %}
+        {{ range . }}
         <tr>
           <td>
-            <a href="{{ e.Link }}">{{ e.Link }}</a>
+            <a href="{{ .Link }}">{{ .Link }}</a>
             </td>
           <td>
-            <a href="/red/{{ e.Hash }}">{{ e.Short }}</a>
+            <a href="/redirect/{{ .Hash }}" target="_blank">{{ .Short }}</a>
           </td>
           <td>
-            <a href="/remove/link/{{ e.Hash }}">X</a>
+            <a href="/link/remove/{{ .Hash }}">
+              <img src="out/img/trash-48.png">
+            </a>
           </td>
         </tr>
-        {% endfor %}
+        {{ end }}
       </tbody>
     </table>
   </div>

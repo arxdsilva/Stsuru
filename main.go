@@ -3,13 +3,15 @@ package main
 import (
 	"crypto/md5"
 	"fmt"
+	"html/template"
 	"io"
 	"log"
+	"net/http"
 
-	"github.com/iris-contrib/template/django"
-	"github.com/kataras/iris"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	"github.com/gorilla/mux"
 )
 
 type lines struct {
@@ -19,40 +21,37 @@ type lines struct {
 }
 
 func main() {
-	iris.UseTemplate(django.New()).Directory("./templates", ".html")
-	iris.Post("/link/add", addLink)
-	iris.Get("/remove/link/:id", remover)
-	iris.Get("/red/:id", linkSolver)
-	iris.Get("/", homer)
-	iris.Listen(":8080")
+	r := mux.NewRouter()
+	r.HandleFunc("/", Home)
+	r.HandleFunc("/link/add", AddLink)
+	r.HandleFunc("/link/remove/{id}", RemoveLink)
+	r.HandleFunc("/redirect/{id}", LinkSolver)
+	http.Handle("/", r)
+	http.ListenAndServe(":8080", nil)
 }
 
-func homer(ctx *iris.Context) {
-	data := []lines{}
-
+// Home ...
+func Home(w http.ResponseWriter, r *http.Request) {
+	Data := []lines{}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
-	if err != nil {
-		log.Panic(err)
-	}
-
+	checkError(err)
 	c := session.DB("tsuru").C("links")
-	err = c.Find(bson.M{}).All(&data)
-	if err != nil {
-		log.Panic(err)
-	}
+	err = c.Find(bson.M{}).All(&Data)
+	checkError(err)
+	t, err := template.ParseFiles("tmpl/index.html")
+	checkError(err)
 
-	context := map[string]interface{}{}
-	context["array"] = data
-	ctx.Render("mypage.html", context)
+	t.Execute(w, Data)
 }
 
-func addLink(ctx *iris.Context) {
-	link := ctx.FormValueString("user_link")
+// AddLink ...
+func AddLink(w http.ResponseWriter, r *http.Request) {
+	r.ParseForm()
+	link := r.Form["user_link"][0]
 	if link == "" {
-		ctx.Redirect("/")
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
-
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -62,44 +61,46 @@ func addLink(ctx *iris.Context) {
 	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
-	if err != nil {
-		log.Panic(err)
-	}
+	checkError(err)
 	err = session.DB("tsuru").C("links").Insert(linha)
-	if err != nil {
-		log.Panic(err)
-	}
-	ctx.Redirect("/")
+	checkError(err)
+
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func remover(ctx *iris.Context) {
-	id := ctx.Param("id")
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+func checkError(err error) {
 	if err != nil {
 		log.Panic(err)
 	}
+	return
+}
+
+// RemoveLink ...
+func RemoveLink(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)
+	idInfo := id["id"]
+
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	checkError(err)
 	c := session.DB("tsuru").C("links")
-	err = c.Remove(bson.M{"hash": id})
-	if err != nil {
-		log.Panic(err)
-	}
-	ctx.Redirect("/")
+	err = c.Remove(bson.M{"hash": idInfo})
+	checkError(err)
+	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func linkSolver(ctx *iris.Context) {
-	id := ctx.Param("id")
+// LinkSolver ...
+func LinkSolver(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)
 	dbData := lines{}
-	id = fmt.Sprintf("%s", id)
+	idInfo := id["id"]
 
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
-	if err != nil {
-		log.Panic(err)
-	}
-	c := session.DB("tsuru").C("links").Find(bson.M{"hash": id}).One(&dbData)
+	checkError(err)
+	c := session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
 	if c != nil {
-		ctx.Redirect("/")
+		http.Redirect(w, r, "/", http.StatusFound)
 	}
-	ctx.Redirect(dbData.Link)
+	http.Redirect(w, r, dbData.Link, http.StatusFound)
 }
