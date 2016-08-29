@@ -1,6 +1,8 @@
+[![Build Status](https://travis-ci.org/arxdsilva/stack.svg?branch=master)](https://travis-ci.org/arxdsilva/stack)
+
 # Stsuru
 
-- **Simple** link shortener;
+- **Simple** link 'shortener';
 - Written in [Go](http://golang.org);
 
 ## Introduction
