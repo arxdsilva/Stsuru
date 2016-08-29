@@ -33,7 +33,7 @@ Any help is appreciated! Use [Issue tracker](https://github.com/arxdsilva/stack/
 Interested to help development? Fork the project and submit a [Pull Request](https://github.com/arxdsilva/stack/pulls).
 
 ## LICENSE
-Check your [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
+Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
 
 ## Credits
 Made by **[@arxdsilva](https://twitter.com/arxdsilva)** with great help of [Tsuru team](https://github.com/tsuru/tsuru)!

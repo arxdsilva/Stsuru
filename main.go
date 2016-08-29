@@ -27,6 +27,7 @@ func main() {
 	r.HandleFunc("/link/remove/{id}", RemoveLink)
 	r.HandleFunc("/redirect/{id}", LinkSolver)
 	http.Handle("/", r)
+	fmt.Println("The server is now live @ localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -55,7 +56,7 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
-	linkshort := fmt.Sprintf("http://tsu.ru:8080/%x", hash)
+	linkshort := fmt.Sprintf("http://localhost:8080/%x", hash)
 	dbHash := fmt.Sprintf("%x", hash)
 
 	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
