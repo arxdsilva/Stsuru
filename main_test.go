@@ -1,12 +1,7 @@
 package main
 
-import (
-	"net/http/httptest"
-	"testing"
-)
-
-func requestTest(t *testing.T) {
-	req := httptest.NewRequest("GET", "/", nil)
-	w := httptest.NewRecorder()
+func requestTest() {
+	req, _ := http.NewRequest("GET", "/", nil)
+	w := http.NewRecorder()
 	Home(w, req)
 }

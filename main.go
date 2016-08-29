@@ -36,11 +36,9 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
-
 	c := session.DB("tsuru").C("links")
 	err = c.Find(bson.M{}).All(&Data)
 	checkError(err)
-
 	t, err := template.ParseFiles("tmpl/index.html")
 	checkError(err)
 
@@ -51,11 +49,9 @@ func Home(w http.ResponseWriter, r *http.Request) {
 func AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
-
 	if link == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
-
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -66,7 +62,6 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
-
 	err = session.DB("tsuru").C("links").Insert(linha)
 	checkError(err)
 
@@ -88,11 +83,9 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
-
 	c := session.DB("tsuru").C("links")
 	err = c.Remove(bson.M{"hash": idInfo})
 	checkError(err)
-
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -105,7 +98,6 @@ func LinkSolver(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
-
 	c := session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
 	if c != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
