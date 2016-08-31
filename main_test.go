@@ -21,8 +21,9 @@ func TestHome(t *testing.T) {
 }
 
 func TestAddLink(t *testing.T) {
+	link := "http://localhost:8080/"
 	v := url.Values{}
-	v.Add("user_link", "http://localhost:8080/")
+	v.Add("user_link", link)
 	tf := strings.NewReader(v.Encode())
 	r := httptest.NewRequest("POST", "/link/add", tf)
 	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -34,16 +35,16 @@ func TestAddLink(t *testing.T) {
 	}
 	session, err := mgo.Dial("localhost")
 	if err != nil {
-		t.Errorf("aaa")
+		t.Errorf("Could not start session in MongoDB using localhost.")
 	}
 	defer session.Close()
 	dbData := lines{}
 	err = session.DB("tsuru").C("links").Find(bson.M{"link": "http://localhost:8080/"}).One(&dbData)
 	if err != nil {
-		t.Errorf("bbb")
+		t.Errorf("Could not find in MongoDB the link: %s", link)
 	}
-	if dbData.Link != "http://localhost:8080/" {
-		t.Error("xxx")
+	if dbData.Link != link {
+		t.Errorf("Link founded was not equal to %s", link)
 	}
 }
 

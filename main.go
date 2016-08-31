@@ -54,7 +54,7 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	if link == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
-	// validating URL
+
 	validURL := govalidator.IsURL(link)
 	if validURL != true {
 		http.Redirect(w, r, "/", http.StatusFound)
