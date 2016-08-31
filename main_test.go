@@ -46,3 +46,7 @@ func TestAddLink(t *testing.T) {
 		t.Error("xxx")
 	}
 }
+
+func TestRemoveLink(t *testing.T) {
+
+}

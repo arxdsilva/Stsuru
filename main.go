@@ -63,6 +63,15 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
+
+	// before inserting we wish to findout if It already is in DB
+	dbData := lines{}
+	err = session.DB("tsuru").C("links").Find(bson.M{"hash": dbHash}).One(&dbData)
+	if err == nil {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
 	err = session.DB("tsuru").C("links").Insert(linha)
 	checkError(err)
 
@@ -99,8 +108,8 @@ func LinkSolver(w http.ResponseWriter, r *http.Request) {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
-	c := session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
-	if c != nil {
+	err = session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
+	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 	http.Redirect(w, r, dbData.Link, http.StatusFound)
