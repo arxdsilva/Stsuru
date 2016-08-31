@@ -11,6 +11,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 )
 
@@ -53,6 +54,13 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	if link == "" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
+	// validating URL
+	validURL := govalidator.IsURL(link)
+	if validURL != true {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
@@ -64,7 +72,6 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	defer session.Close()
 	checkError(err)
 
-	// before inserting we wish to findout if It already is in DB
 	dbData := lines{}
 	err = session.DB("tsuru").C("links").Find(bson.M{"hash": dbHash}).One(&dbData)
 	if err == nil {
