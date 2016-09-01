@@ -22,32 +22,6 @@ func TestHome(t *testing.T) {
 }
 
 func TestAddLink(t *testing.T) {
-	link := "http://localhost:8080/"
-	v := url.Values{}
-	v.Add("user_link", link)
-	tf := strings.NewReader(v.Encode())
-	r := httptest.NewRequest("POST", "/link/add", tf)
-	r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	w := httptest.NewRecorder()
-
-	AddLink(w, r)
-	if w.Code != http.StatusFound {
-		t.Errorf("Home page didn't return %v", http.StatusFound)
-	}
-	session, err := mgo.Dial("localhost")
-	if err != nil {
-		t.Errorf("Could not start session in MongoDB using localhost.")
-	}
-	defer session.Close()
-	dbData := lines{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"link": link}).One(&dbData)
-	if err != nil {
-		t.Errorf("Could not find in MongoDB the link: %s", link)
-	}
-	if dbData.Link != link {
-		t.Errorf("Link founded was not equal to %s", link)
-	}
-
 	var testURLs = []struct {
 		name   string
 		expect bool
@@ -55,21 +29,24 @@ func TestAddLink(t *testing.T) {
 		{"", false},
 		{"notalink", false},
 		{"notavalidurl.com", false},
+		{"http://localhost:8080/", true},
 		{"http://science.nasa.gov/", true},
 		{"multiple.dots.not.valid.url", false},
 		{"https://godoc.org/gopkg.in/mgo.v2", true},
 		{"https://godoc.org/gopkg.in/mgo.v2", true},
 	}
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	v := url.Values{}
 
 	// tests different URLs DB insertion
 	for _, test := range testURLs {
 		v.Set("user_link", test.name)
-		tf = strings.NewReader(v.Encode())
-		r = httptest.NewRequest("POST", "/link/add", tf)
+		tf := strings.NewReader(v.Encode())
+		r := httptest.NewRequest("POST", "/link/add", tf)
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-		w = httptest.NewRecorder()
+		w := httptest.NewRecorder()
 
-		fmt.Println(v)
 		AddLink(w, r)
 		if w.Code != http.StatusFound {
 			t.Errorf("Home page didn't return %v", http.StatusFound)
@@ -84,10 +61,8 @@ func TestAddLink(t *testing.T) {
 				t.Errorf("Got a %t result, instead of %t while trying to query %s", test.expect, exp, test.name)
 			}
 		}
-	}
 
-	// tests the number of elements returned per query
-	for _, test := range testURLs {
+		// tests the number of elements returned per query
 		dbNum := []lines{}
 		err = session.DB("tsuru").C("links").Find(bson.M{"link": test.name}).All(&dbNum)
 		if test.expect == true && err != nil {
@@ -98,6 +73,7 @@ func TestAddLink(t *testing.T) {
 		if len(dbNum) > 1 {
 			t.Errorf("MongoDB has multiple insertions of %s", test.name)
 		}
+		fmt.Print(".")
 	}
 }
 
