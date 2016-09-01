@@ -49,24 +49,30 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 // AddLink ...
 func AddLink(w http.ResponseWriter, r *http.Request) {
+	// gets the URL inserted in Form
 	r.ParseForm()
 	link := r.Form["user_link"][0]
-	if link == "" {
-		http.Redirect(w, r, "/", http.StatusFound)
-	}
 
-	validURL := govalidator.IsURL(link)
-	if validURL != true {
+	// checking the URL
+	isURL := govalidator.IsURL(link)
+	if isURL != true {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	validateURL := govalidator.IsRequestURL(link)
+	if validateURL != true {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
+	// URL hashing
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
 	linkshort := fmt.Sprintf("http://localhost:8080/%x", hash)
 	dbHash := fmt.Sprintf("%x", hash)
 
+	// URL storage
 	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
