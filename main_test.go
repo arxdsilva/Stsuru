@@ -46,16 +46,20 @@ func TestAddLink(t *testing.T) {
 	if dbData.Link != link {
 		t.Errorf("Link founded was not equal to %s", link)
 	}
+
+	// testing different URLs to prevent adding wrong info on DB
+	// tests if the number of URLs is right ??? -to do
 	var testURLs = []struct {
-		name string
+		name   string
+		expect bool
 	}{
-		{""},
-		{"notalink"},
-		{"notavalidurl.com"},
-		{"http://science.nasa.gov/"},
-		{"multiple.dots.not.valid.url"},
-		{"https://godoc.org/gopkg.in/mgo.v2"},
-		{"https://godoc.org/gopkg.in/mgo.v2"},
+		{"", false},
+		{"notalink", false},
+		{"notavalidurl.com", false},
+		{"http://science.nasa.gov/", true},
+		{"multiple.dots.not.valid.url", false},
+		{"https://godoc.org/gopkg.in/mgo.v2", true},
+		{"https://godoc.org/gopkg.in/mgo.v2", true},
 	}
 
 	for _, test := range testURLs {
@@ -74,14 +78,15 @@ func TestAddLink(t *testing.T) {
 		if err != nil {
 			t.Errorf("Could not start session in MongoDB using localhost.")
 		}
-		defer session.Close()
+
 		dbData := lines{}
+		var exp bool
+
 		err = session.DB("tsuru").C("links").Find(bson.M{"link": test.name}).One(&dbData)
 		if err != nil {
-			t.Errorf("Could not find in MongoDB the link: %s", test.name)
-		}
-		if dbData.Link != test.name {
-			t.Errorf("Link founded was not equal to %s", test.name)
+			if exp != test.expect {
+				t.Errorf("Got a %t result, instead of %t while trying to query %s", test.expect, exp, test.name)
+			}
 		}
 	}
 	// proximos testes:
