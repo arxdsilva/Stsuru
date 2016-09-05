@@ -34,10 +34,10 @@ func main() {
 }
 
 func css(w http.ResponseWriter, r *http.Request) {
-	http.StripPrefix("/out/", http.FileServer(http.Dir("/out/home.css")))
+	http.StripPrefix("/out/", http.FileServer(http.Dir("./out/")))
 }
 
-// Home ...
+// Home handles "/" GET request and loads all data
 func Home(w http.ResponseWriter, r *http.Request) {
 	Data := []lines{}
 	session, err := mgo.Dial("localhost")
@@ -52,7 +52,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, Data)
 }
 
-// AddLink ...
+// AddLink handles POST request to DB and redirects to Home
 func AddLink(w http.ResponseWriter, r *http.Request) {
 	// gets the URL inserted in Form
 	r.ParseForm()
@@ -77,8 +77,7 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 	linkshort := fmt.Sprintf("http://localhost:8080/%x", hash)
 	dbHash := fmt.Sprintf("%x", hash)
 
-	// URL storage
-	linha := &lines{Link: link, Short: linkshort, Hash: dbHash}
+	l := &lines{Link: link, Short: linkshort, Hash: dbHash}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
@@ -90,7 +89,7 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = session.DB("tsuru").C("links").Insert(linha)
+	err = session.DB("tsuru").C("links").Insert(l)
 	checkError(err)
 
 	http.Redirect(w, r, "/", http.StatusFound)

@@ -12,6 +12,20 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
+var testURLs = []struct {
+	name   string
+	expect bool
+}{
+	{"", false},
+	{"notalink", false},
+	{"notavalidurl.com", false},
+	{"http://localhost:8080/", true},
+	{"http://science.nasa.gov/", true},
+	{"multiple.dots.not.valid.url", false},
+	{"https://godoc.org/gopkg.in/mgo.v2", true},
+	{"https://godoc.org/gopkg.in/mgo.v2", true},
+}
+
 func TestHome(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
@@ -22,19 +36,6 @@ func TestHome(t *testing.T) {
 }
 
 func TestAddLink(t *testing.T) {
-	var testURLs = []struct {
-		name   string
-		expect bool
-	}{
-		{"", false},
-		{"notalink", false},
-		{"notavalidurl.com", false},
-		{"http://localhost:8080/", true},
-		{"http://science.nasa.gov/", true},
-		{"multiple.dots.not.valid.url", false},
-		{"https://godoc.org/gopkg.in/mgo.v2", true},
-		{"https://godoc.org/gopkg.in/mgo.v2", true},
-	}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	v := url.Values{}
