@@ -24,12 +24,17 @@ type lines struct {
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", Home)
+	r.HandleFunc("/css/", css)
 	r.HandleFunc("/link/add", AddLink)
-	r.HandleFunc("/link/remove/{id}", RemoveLink)
 	r.HandleFunc("/redirect/{id}", LinkSolver)
+	r.HandleFunc("/link/remove/{id}", RemoveLink)
 	http.Handle("/", r)
 	fmt.Println("The server is now live @ localhost:8080")
 	http.ListenAndServe(":8080", nil)
+}
+
+func css(w http.ResponseWriter, r *http.Request) {
+	http.StripPrefix("/out/", http.FileServer(http.Dir("/out/home.css")))
 }
 
 // Home ...

@@ -75,6 +75,7 @@ func TestAddLink(t *testing.T) {
 		}
 		fmt.Print(".")
 	}
+	fmt.Println()
 }
 
 func TestRemoveLink(t *testing.T) {
