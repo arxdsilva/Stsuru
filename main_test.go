@@ -1,9 +1,7 @@
 package main
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,6 +13,14 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
+
+var testCases = []struct {
+	name string
+}{
+	{"http://localhost:8080/"},
+	{"http://science.nasa.gov/"},
+	{"https://godoc.org/gopkg.in/mgo.v2"},
+}
 
 func TestHome(t *testing.T) {
 	r := httptest.NewRequest("GET", "/", nil)
@@ -78,26 +84,26 @@ func TestAddLink(t *testing.T) {
 		if len(dbNum) > 1 {
 			t.Errorf("MongoDB has multiple insertions of %s", test.name)
 		}
-		fmt.Print(".")
+		fmt.Print(". ")
 	}
 	fmt.Println()
 }
 
+// func TestLinkSolver(t *testing.T) {
+// 	fmt.Print("Test Link Solver: ")
+// 	for _, test := range testCases {
+//
+// 		fmt.Print(". ")
+// 	}
+// 	fmt.Println()
+// }
+
 func TestRemove(t *testing.T) {
-	var testRmv = []struct {
-		name string
-	}{
-		{"http://localhost:8080/"},
-		{"http://science.nasa.gov/"},
-		{"https://godoc.org/gopkg.in/mgo.v2"},
-	}
 	fmt.Print("Test Removing Links: ")
-	for _, test := range testRmv {
-		h := md5.New()
-		io.WriteString(h, test.name)
-		hash := string(h.Sum(nil))
-		dbHash := fmt.Sprintf("%x", hash)
-		n := fmt.Sprintf("/link/remove/%s", dbHash)
+	for _, test := range testCases {
+		path := "/link/remove/"
+		link := test.name
+		n, dbHash := hash(link, path)
 
 		r := httptest.NewRequest("GET", n, nil)
 		r.Header.Set("Content-Type", "text/html")
@@ -109,15 +115,11 @@ func TestRemove(t *testing.T) {
 		m.HandleFunc("/link/remove/{id}", RemoveLink)
 		m.ServeHTTP(w, r)
 
-		session, err := mgo.Dial("localhost")
-		defer session.Close()
-		dbData := lines{}
-
-		err = session.DB("tsuru").C("links").Find(bson.M{"hash": dbHash}).One(&dbData)
+		_, err := findOne(dbHash)
 		if err == nil {
 			t.Errorf("%s not expected on Mongo", dbHash)
 		}
-		fmt.Print("x")
+		fmt.Print("x ")
 	}
 	fmt.Println()
 }

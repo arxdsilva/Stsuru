@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/ArxdSilva/Stsuru.svg?branch=master)](https://travis-ci.org/ArxdSilva/Stsuru)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arxdsilva/Stsuru)](https://goreportcard.com/badge/github.com/arxdsilva/Stsuru)
+[![codebeat badge](https://codebeat.co/badges/2ffb3187-79c2-4589-a383-86da64440e64)](https://codebeat.co/projects/github-com-arxdsilva-stsuru)
 
 
 # Stsuru

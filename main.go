@@ -69,26 +69,19 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	path := "http://localhost:8080/"
 	// URL hashing
-	h := md5.New()
-	io.WriteString(h, link)
-	hash := string(h.Sum(nil))
-	linkshort := fmt.Sprintf("http://localhost:8080/%x", hash)
-	dbHash := fmt.Sprintf("%x", hash)
+	linkShort, dbHash := hash(link, path)
 
-	l := &lines{Link: link, Short: linkshort, Hash: dbHash}
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
-	checkError(err)
+	l := &lines{Link: link, Short: linkShort, Hash: dbHash}
 
-	dbData := lines{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"hash": dbHash}).One(&dbData)
+	_, err := findOne(dbHash)
 	if err == nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
-	err = session.DB("tsuru").C("links").Insert(l)
+	err = insert(l)
 	checkError(err)
 
 	http.Redirect(w, r, "/", http.StatusFound)
@@ -118,15 +111,36 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 // LinkSolver ...
 func LinkSolver(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
-	dbData := lines{}
 	idInfo := id["id"]
 
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
-	checkError(err)
-	err = session.DB("tsuru").C("links").Find(bson.M{"hash": idInfo}).One(&dbData)
+	l, err := findOne(idInfo)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
-	http.Redirect(w, r, dbData.Link, http.StatusFound)
+	http.Redirect(w, r, l, http.StatusFound)
+}
+
+func hash(link, path string) (string, string) {
+	h := md5.New()
+	io.WriteString(h, link)
+	hash := string(h.Sum(nil))
+	linkShort := fmt.Sprintf("%s%x", path, hash)
+	dbHash := fmt.Sprintf("%x", hash)
+	return linkShort, dbHash
+}
+
+func findOne(dbHash string) (string, error) {
+	dbData := lines{}
+	session, err := mgo.Dial("localhost")
+	checkError(err)
+	defer session.Close()
+	err = session.DB("tsuru").C("links").Find(bson.M{"hash": dbHash}).One(&dbData)
+	return dbData.Link, err
+}
+
+func insert(l *lines) error {
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	err = session.DB("tsuru").C("links").Insert(l)
+	return err
 }
