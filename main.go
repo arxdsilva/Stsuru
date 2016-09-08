@@ -94,7 +94,7 @@ func checkError(err error) {
 	return
 }
 
-// RemoveLink ...
+// RemoveLink searches db for a certain link & removes It if It exists
 func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]

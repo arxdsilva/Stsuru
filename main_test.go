@@ -89,14 +89,29 @@ func TestAddLink(t *testing.T) {
 	fmt.Println()
 }
 
-// func TestLinkSolver(t *testing.T) {
-// 	fmt.Print("Test Link Solver: ")
-// 	for _, test := range testCases {
-//
-// 		fmt.Print(". ")
-// 	}
-// 	fmt.Println()
-// }
+func TestLinkSolver(t *testing.T) {
+	fmt.Print("Test Link Solver: ")
+	for _, test := range testCases {
+		link := test.name
+		path := "/redirect/"
+		n, _ := hash(link, path)
+
+		r := httptest.NewRequest("GET", n, nil)
+		r.Header.Set("Content-Type", "text/html")
+		r.Header.Add("Accept", "text/html")
+		r.Header.Set("Accept", "application/xhtml+xml")
+		w := httptest.NewRecorder()
+
+		m := mux.NewRouter()
+		m.HandleFunc("/redirect/{id}", LinkSolver)
+		m.ServeHTTP(w, r)
+		if w.Code != http.StatusFound {
+			fmt.Printf("Link %s could not be solved by app", link)
+		}
+		fmt.Print("* ")
+	}
+	fmt.Println()
+}
 
 func TestRemove(t *testing.T) {
 	fmt.Print("Test Removing Links: ")
