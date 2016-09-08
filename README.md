@@ -19,12 +19,10 @@ $ go get -u github.com/arxdsilva/Stsuru
 
 ## Usage
 ### Tests
-Run the tests of the software:
 ```shell
 $ go test
 ```
 ### Start server
-Start server running:
 ```shell
 $ go run main.go
 ```
