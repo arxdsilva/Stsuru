@@ -34,7 +34,7 @@ func main() {
 }
 
 func css(w http.ResponseWriter, r *http.Request) {
-	http.StripPrefix("/out/", http.FileServer(http.Dir("./out/")))
+	http.StripPrefix("/out/", http.FileServer(http.Dir("out/")))
 }
 
 // Home handles "/" GET request and loads all data
@@ -54,7 +54,6 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 // AddLink handles POST request to DB and redirects to Home
 func AddLink(w http.ResponseWriter, r *http.Request) {
-	// gets the URL inserted in Form
 	r.ParseForm()
 	link := r.Form["user_link"][0]
 
@@ -107,6 +106,9 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
 
+	// parts := strings.Split(r.URL.Path, "/")
+	// idInfo = parts[3]
+	// fmt.Printf("idInfo: %s", idInfo)
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
