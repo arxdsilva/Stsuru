@@ -24,7 +24,7 @@ Run the tests of the software:
 $ go test
 ```
 ### Start server
-Start the server on:
+Start server running:
 ```shell
 $ go run main.go
 ```
@@ -32,9 +32,9 @@ Open your **browser** and type:
 `localhost:8080`
 
 ## Contributing
-Any help is appreciated! Use [Issue tracker](https://github.com/arxdsilva/stack/issues) to report **any** problem or fill feature requests.
+Any help is appreciated! Use [Issue tracker](https://github.com/arxdsilva/stsuru/issues) to report **any** problem or fill feature requests.
 
-Interested to help development? Fork the project and submit a [Pull Request](https://github.com/arxdsilva/stack/pulls).
+Interested to help development? Fork the project and submit a [Pull Request](https://github.com/arxdsilva/stsuru/pulls).
 
 ## LICENSE
 Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
