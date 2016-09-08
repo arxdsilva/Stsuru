@@ -106,9 +106,6 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
 
-	// parts := strings.Split(r.URL.Path, "/")
-	// idInfo = parts[3]
-	// fmt.Printf("idInfo: %s", idInfo)
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
