@@ -24,25 +24,12 @@ type Lines struct {
 func AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
-
 	// checking the URL
-	isURL := govalidator.IsURL(link)
-	if isURL != true {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	validateURL := govalidator.IsRequestURL(link)
-	if validateURL != true {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-
+  validateURL(link)
 	path := "http://localhost:8080/"
 	// URL hashing
 	linkShort, dbHash := Hash(link, path)
-
 	l := &Lines{Link: link, Short: linkShort, Hash: dbHash}
-
 	_, err := mgo.FindOne(dbHash)
 	if err == nil {
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -103,4 +90,17 @@ func Hash(link, path string) (string, string) {
 	linkShort := fmt.Sprintf("%s%x", path, hash)
 	dbHash := fmt.Sprintf("%x", hash)
 	return linkShort, dbHash
+}
+
+func validateURL(l string) {
+  isURL := govalidator.IsURL(link)
+	if isURL != true {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	validateURL := govalidator.IsRequestURL(link)
+	if validateURL != true {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 }
