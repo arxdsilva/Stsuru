@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Router registers the routes from Stsuru
+// Router registers the routes used by Stsuru
 func main() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", handlers.Home)
