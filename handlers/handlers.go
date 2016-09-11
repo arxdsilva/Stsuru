@@ -1,9 +1,6 @@
 package handlers
 
 import (
-	"crypto/md5"
-	"fmt"
-	"io"
 	"log"
 	"net/http"
 
@@ -13,39 +10,29 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Lines is the structure that is added inside Db
-type Lines struct {
-	Link  string
-	Short string
-	Hash  string
-}
-
 // AddLink ...
 func AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
 	// checking the URL
-  validateURL(link)
-	path := "http://localhost:8080/"
-	// URL hashing
-	linkShort, dbHash := Hash(link, path)
-	l := &Lines{Link: link, Short: linkShort, Hash: dbHash}
-	_, err := mgo.FindOne(dbHash)
+	validateURL(link, w, r)
+	_, err := mngo.FindLink(link)
 	if err == nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	err = mgo.Insert(l)
-	CheckError(err)
+	err = mngo.Insert(link)
+	checkError(err)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // Home ...
 func Home(w http.ResponseWriter, r *http.Request) {
-	Data := []Lines{}
+	Data, err := mngo.GetAll()
+	checkError(err)
 
-	t, err := template.ParseFiles("tmpl/index.html")
-	CheckError(err)
+	t, err := template.ParseFiles("../tmpl/index.html")
+	checkError(err)
 
 	t.Execute(w, Data)
 }
@@ -63,44 +50,38 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// Redirect ...
+// Redirect takes the hashed URL and checks Mongo If It exists;
+// Existing the user will be Redirected into the desired URL;
+// Otherwise It will take the user back to the main page;
+// Better error: If false It should let the user know that It is not a valid request and then
+// redirect to the Home page.
 func Redirect(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
-	l, err := findOne(idInfo)
+	l, err := mngo.FindOne(idInfo)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 	http.Redirect(w, r, l, http.StatusFound)
 }
 
-// CheckError ...
-func CheckError(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
-	return
-}
-
-// Hash ....
-func Hash(link, path string) (string, string) {
-	h := md5.New()
-	io.WriteString(h, link)
-	hash := string(h.Sum(nil))
-	linkShort := fmt.Sprintf("%s%x", path, hash)
-	dbHash := fmt.Sprintf("%x", hash)
-	return linkShort, dbHash
-}
-
-func validateURL(l string) {
-  isURL := govalidator.IsURL(link)
+func validateURL(link string, w http.ResponseWriter, r *http.Request) {
+	isURL := govalidator.IsURL(link)
 	if isURL != true {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	validateURL := govalidator.IsRequestURL(link)
-	if validateURL != true {
+	validURL := govalidator.IsRequestURL(link)
+	if validURL != true {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
+	return
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
+	return
 }

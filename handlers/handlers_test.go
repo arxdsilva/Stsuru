@@ -45,7 +45,7 @@ func TestRemoveLink(t *testing.T) {
 	fmt.Println()
 }
 
-func TestLinkSolver(t *testing.T) {
+func TestRedirect(t *testing.T) {
   fmt.Print("Test Link Solver: ")
 	for _, test := range testCases {
 		link := test.name
@@ -59,7 +59,7 @@ func TestLinkSolver(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		m := mux.NewRouter()
-		m.HandleFunc("/redirect/{id}", LinkSolver)
+		m.HandleFunc("/redirect/{id}", Redirect)
 		m.ServeHTTP(w, r)
 		if w.Code != http.StatusFound {
 			fmt.Printf("Link %s could not be solved by app", link)
