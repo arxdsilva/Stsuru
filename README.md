@@ -28,7 +28,7 @@ $ go test
 $ go run main.go
 ```
 Open your **browser** and type:
-`localhost:8080`
+[`localhost:8080`](http://localhost:8080/)
 
 ## Contributing
 Any help is appreciated! Use [Issue tracker](https://github.com/arxdsilva/stsuru/issues) to report **any** problem or fill feature requests.
