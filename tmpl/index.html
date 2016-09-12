@@ -1,44 +1,99 @@
 <!DOCTYPE html>
+
 <head>
-    <title>Link shortener</title>
+    <title>Link shortener for Tsuru</title>
+    <link rel="stylesheet" href="../css/css/bootstrap.min.css">
     <link type="text/css" rel="stylesheet" href="../css/home.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 
 <body>
-  <form action="/link/add" method="post">
-    <div>
-      <label for="link">Link:</label>
-      <input type="text" name="user_link">
+  <nav class="navbar navbar-default">
+    <div class="container-fluid">
+      <!-- Brand and toggle get grouped for better mobile display -->
+      <div class="navbar-header">
+        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+          <span class="sr-only">Toggle navigation</span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </button>
+        <a class="navbar-brand" href="https://tsuru.io" target="_blank">Tsuru.io</a>
+      </div>
+      <!-- Collect the nav links, forms, and other content for toggling -->
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+        <ul class="nav navbar-nav">
+          <li><a href="https://docs.tsuru.io/stable/" target="_blank">Docs</a></li>
+          <li><a href="https://github.com/tsuru" target="_blank">Code</a></li>
+          <li class="active"><a href="https://twitter.com/tsurupaas" target="_blank">Twitter<span class="sr-only">(current)</span></a></li>
+        </ul>
+        <ul class="nav navbar-nav navbar-right">
+          <li><a href="https://gitter.im/tsuru/tsuru" target="_blank">Gitter</a></li>
+        </ul>
+      </div>
+      <!-- /.navbar-collapse -->
     </div>
-    <div class="button">
-        <button type="submit" value="link">Post</button>
+    <!-- /.container-fluid -->
+  </nav>
+  <div class="container">
+    <div class="row">
+      <div class="col-md-2"></div>
+      <div class="col-md-7">
+        <div class="col-md-12 col-xs-12 text-center">
+            <h3>Tsuru Shortener</h3>
+        </div>
+        <form action="/link/add" method="post">
+          <div class="col-md-11 col-xs-8 text-center">
+            <label for="link" class="col-md-2 col-xs-2 text-center">Link:</label>
+            <input type="text" name="user_link" class="col-md-10 col-xs-6 text-center">
+          </div>
+          <div class="button col-md-1 col-xs-4 text-center">
+            <button type="submit" class="btn btn-success" value="link">Go Shorter!</button>
+          </div>
+        </form>
+      </div>
+      <div class="col-md-3"></div>
     </div>
-  </form>
+  </div>
 
-  <div>
-    <table>
-      <thead>
-        <tr>
-          <th>Link</th>
-          <th>Short</th>
-          <th>Remove</th>
-        </tr>
-      </thead>
-      <tbody>
-        {{ range . }}
-        <tr>
-          <td>
-            <a href="{{ .Link }}">{{ .Link }}</a>
+  <div class="col-md-12 col-xs-12 text-center">
+    <table class="table table-hover">
+      <div class="col-md-4"></div>
+      <div class="col-md-8">
+        <thead>
+          <tr>
+            <th>Link</th>
+            <th>Short</th>
+            <th>Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {{ range . }}
+          <tr>
+            <td>
+              <a href="{{ .Link }}">{{ .Link }}</a>
+              </td>
+            <td>
+              <a href="/r/{{ .Hash }}" target="_blank">{{ .Short }}</a>
             </td>
-          <td>
-            <a href="/r/{{ .Hash }}" target="_blank">{{ .Short }}</a>
-          </td>
-          <td>
-            <a href="/link/remove/{{ .Hash }}"> X </a>
-          </td>
-        </tr>
-        {{ end }}
-      </tbody>
+            <td>
+              <a href="/link/remove/{{ .Hash }}">
+                <img src="../css/img/trash-48.png">
+              </a>
+            </td>
+          </tr>
+          {{ end }}
+        </tbody>
+      </div>
     </table>
   </div>
+    <footer class="footer">
+        <div class="col-md-12 col-xs-12 text-center">
+            <p>Crafted in Rio de Janeiro @ <a href="http://www.globo.com" target="_blank">Globo.com</a> by <a href="http://www.github.com/arxdsilva" target="_blank">@ArxdSilva</a></p>
+        </div>
+    </footer>
+
+    <!-- bootstrap's scripts -->
+    <script src="../css/js/jquery.min.js"></script>
+    <script src="../css/js/bootstrap.min.js"></script>
 </body>

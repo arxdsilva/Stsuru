@@ -1,6 +1,6 @@
 body {
-    background-color: #223;
-    color: white;
+    background-color: #ffffa0;
+    color: black;
 }
 
 footer {
@@ -22,7 +22,6 @@ p {
 }
 
 img {
-  max-width: 65%;
-  max-height: 150px;
-  margin: -100px;
+  width: 20px;
+  height: 20px;
 }

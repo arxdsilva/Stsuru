@@ -1,45 +1,49 @@
-package handlers
+package web
 
 import (
 	"log"
 	"net/http"
 
 	"github.com/alecthomas/template"
-	"github.com/arxdsilva/Stsuru/mngo"
+	"github.com/arxdsilva/Stsuru/web/mngo"
 	"github.com/asaskevich/govalidator"
 	"github.com/gorilla/mux"
 )
 
-// AddLink ...
+// AddLink validates the request's URL and asks Mongo to add It on list
 func AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
 	// checking the URL
-	validateURL(link, w, r)
-	_, err := mngo.FindLink(link)
-	if err == nil {
+	valid := validateURL(link, w, r)
+	if valid == true {
+		_, err := mngo.FindLink(link)
+		if err == nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+			return
+		}
+		err = mngo.Insert(link)
+		checkError(err)
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	err = mngo.Insert(link)
-	checkError(err)
 	http.Redirect(w, r, "/", http.StatusFound)
+	return
 }
 
-// Home ...
+// Home querys Mongo for all It's elements and calls the specified HTML to load them into the page.
 func Home(w http.ResponseWriter, r *http.Request) {
 	Data, err := mngo.GetAll()
 	checkError(err)
-
-	t, err := template.ParseFiles("../tmpl/index.html")
+	t, err := template.ParseFiles("../../tmpl/index.html")
 	checkError(err)
-
-	t.Execute(w, Data)
+	err = t.Execute(w, Data)
+	checkError(err)
 }
 
-// CSS ...
+// CSS SHOULD load style into the page :p
 func CSS(w http.ResponseWriter, r *http.Request) {
-	http.StripPrefix("/out/", http.FileServer(http.Dir("out/")))
+	http.StripPrefix("/css/", http.FileServer(http.Dir("../../css/")))
 }
 
 // RemoveLink searches db for a certain link & removes It if It exists
@@ -58,25 +62,20 @@ func RemoveLink(w http.ResponseWriter, r *http.Request) {
 func Redirect(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
-	l, err := mngo.FindOne(idInfo)
+	l, err := mngo.FindHash(idInfo)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
 	http.Redirect(w, r, l, http.StatusFound)
 }
 
-func validateURL(link string, w http.ResponseWriter, r *http.Request) {
+func validateURL(link string, w http.ResponseWriter, r *http.Request) bool {
 	isURL := govalidator.IsURL(link)
-	if isURL != true {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
 	validURL := govalidator.IsRequestURL(link)
-	if validURL != true {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
+	if isURL == false || validURL == false {
+		return false
 	}
-	return
+	return true
 }
 
 func checkError(err error) {

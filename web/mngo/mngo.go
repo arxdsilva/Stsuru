@@ -14,7 +14,8 @@ import (
 type Mongo interface {
 	Insert() error
 	Delete() error
-	FindOne() (string, error)
+	FindHash() (string, error)
+	FindLink() (string, error)
 	FindAll() error
 }
 
@@ -24,55 +25,60 @@ type lines struct {
 	Hash  string
 }
 
-// Insert ...
+// Insert inputs a link into Mongo
 func Insert(link string) error {
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	checkError(err)
+
 	path := "http://localhost:8080/"
 	// URL hashing
-	linkShort, dbHash := hash(link, path)
+	linkShort, dbHash := Hash(link, path)
 	l := &lines{Link: link, Short: linkShort, Hash: dbHash}
-	session, err := mgo.Dial("localhost")
-	checkError(err)
-	defer session.Close()
 	err = session.DB("tsuru").C("links").Insert(l)
 	return err
 }
 
-// Delete ...
+// Delete removes a link from Mongo
 func Delete(h string) error {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
+
 	c := session.DB("tsuru").C("links")
 	err = c.Remove(bson.M{"hash": h})
 	return err
 }
 
-// FindOne ...
-func FindOne(s string) (string, error) {
-	dbData := lines{}
+// FindHash finds an specific hash Stored on Mongo
+func FindHash(s string) (string, error) {
 	session, err := mgo.Dial("localhost")
-	checkError(err)
 	defer session.Close()
+	checkError(err)
+
+	dbData := lines{}
 	err = session.DB("tsuru").C("links").Find(bson.M{"hash": s}).One(&dbData)
 	return dbData.Link, err
 }
 
-// FindLink ...
+// FindLink searches for an specific link inside Mongo
 func FindLink(s string) (string, error) {
-	dbData := lines{}
 	session, err := mgo.Dial("localhost")
-	checkError(err)
 	defer session.Close()
+	checkError(err)
+
+	dbData := lines{}
 	err = session.DB("tsuru").C("links").Find(bson.M{"link": s}).One(&dbData)
 	return dbData.Link, err
 }
 
-// GetAll ...
+// GetAll queries for all entries
 func GetAll() ([]lines, error) {
-	Data := []lines{}
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
+
+	Data := []lines{}
 	c := session.DB("tsuru").C("links")
 	err = c.Find(bson.M{}).All(&Data)
 	return Data, err
@@ -85,11 +91,12 @@ func checkError(err error) {
 	return
 }
 
-func hash(link, path string) (string, string) {
+// Hash takes the URL, hashes & agregates the URL with your desired path
+func Hash(link, path string) (string, string) {
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
-	linkShort := fmt.Sprintf("%s%x", path, hash)
+	linkShort := fmt.Sprintf("%sr/%x", path, hash)
 	dbHash := fmt.Sprintf("%x", hash)
 	return linkShort, dbHash
 }
