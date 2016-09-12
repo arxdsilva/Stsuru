@@ -25,7 +25,9 @@
         <ul class="nav navbar-nav">
           <li><a href="https://docs.tsuru.io/stable/" target="_blank">Docs</a></li>
           <li><a href="https://github.com/tsuru" target="_blank">Code</a></li>
-          <li class="active"><a href="https://twitter.com/tsurupaas" target="_blank">Twitter<span class="sr-only">(current)</span></a></li>
+          <li class="active">
+            <a href="https://twitter.com/tsurupaas" target="_blank">Twitter<span class="sr-only">(current)</span></a>
+          </li>
         </ul>
         <ul class="nav navbar-nav navbar-right">
           <li><a href="https://gitter.im/tsuru/tsuru" target="_blank">Gitter</a></li>
@@ -43,11 +45,10 @@
             <h3>Tsuru Shortener</h3>
         </div>
         <form action="/link/add" method="post">
-          <div class="col-md-11 col-xs-8 text-center">
-            <label for="link" class="col-md-2 col-xs-2 text-center">Link:</label>
-            <input type="text" name="user_link" class="col-md-10 col-xs-6 text-center">
+          <div class="col-md-10 col-xs-8 text-center">
+            <input type="text" name="user_link" class="col-md-10 col-xs-6 form-control" placeholder="Link">
           </div>
-          <div class="button col-md-1 col-xs-4 text-center">
+          <div class="button col-md-2 col-xs-4 text-center">
             <button type="submit" class="btn btn-success" value="link">Go Shorter!</button>
           </div>
         </form>
@@ -57,22 +58,34 @@
   </div>
 
   <div class="col-md-12 col-xs-12 text-center">
-    <table class="table table-hover">
-      <div class="col-md-4"></div>
+    <div class="col-md-2 text-center"></div>
+    <div class="col-md-8 col-xs-8 text-center">
+      <table class="table table-hover">
       <div class="col-md-8">
         <thead>
           <tr>
-            <th>Link</th>
-            <th>Short</th>
-            <th>Remove</th>
+            <div class="col-md-4 col-xs-4">
+              <th class="hidden-xs">Link</th>
+            </div>
+            <div class="col-md-4 col-xs-10">
+              <th>Short</th>
+            </div>
+            <div class="col-md-2 col-xs-2 text-center">
+              <th>Remove</th>
+            </div>
           </tr>
         </thead>
+      </div>
+    </div>
+  </div>
+
         <tbody>
           {{ range . }}
           <tr>
-            <td>
-              <a href="{{ .Link }}">{{ .Link }}</a>
+            <td class="hidden-xs">
+              <a href="{{ .Link }}" class="hidden-xs">{{ .Link }}</a>
               </td>
+
             <td>
               <a href="/r/{{ .Hash }}" target="_blank">{{ .Short }}</a>
             </td>
@@ -87,13 +100,14 @@
       </div>
     </table>
   </div>
-    <footer class="footer">
-        <div class="col-md-12 col-xs-12 text-center">
-            <p>Crafted in Rio de Janeiro @ <a href="http://www.globo.com" target="_blank">Globo.com</a> by <a href="http://www.github.com/arxdsilva" target="_blank">@ArxdSilva</a></p>
-        </div>
-    </footer>
 
-    <!-- bootstrap's scripts -->
-    <script src="../css/js/jquery.min.js"></script>
-    <script src="../css/js/bootstrap.min.js"></script>
+  <footer class="footer">
+      <div class="col-md-12 col-xs-12 text-center">
+          <p>Crafted in Rio de Janeiro @ <a href="http://www.globo.com" target="_blank">Globo.com</a> by <a href="http://www.github.com/arxdsilva" target="_blank">@ArxdSilva</a></p>
+      </div>
+  </footer>
+
+  <!-- bootstrap's scripts -->
+  <script src="../css/js/jquery.min.js"></script>
+  <script src="../css/js/bootstrap.min.js"></script>
 </body>
