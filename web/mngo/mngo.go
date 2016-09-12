@@ -6,17 +6,21 @@ import (
 	"io"
 	"log"
 
+	"github.com/asaskevich/govalidator"
+
+	"net/http"
+
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 // Mongo is the interface of CRUD methods
 type Mongo interface {
-	Insert() error
-	Delete() error
-	FindHash() (string, error)
-	FindLink() (string, error)
-	FindAll() error
+	Insert()
+	Delete()
+	FindHash()
+	FindLink()
+	FindAll()
 }
 
 type lines struct {
@@ -26,14 +30,23 @@ type lines struct {
 }
 
 // Insert inputs a link into Mongo
-func Insert(link string) error {
+func Insert(link string, w http.ResponseWriter, r *http.Request) error {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()
 	checkError(err)
 
+	valid := validateURL(link)
+	if valid == true {
+		_, err = FindLink(link)
+		if err == nil {
+			http.Redirect(w, r, "/", http.StatusFound)
+		}
+	} else {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return nil
+	}
 	path := "http://localhost:8080/"
-	// URL hashing
-	linkShort, dbHash := Hash(link, path)
+	linkShort, dbHash := hash(link, path)
 	l := &lines{Link: link, Short: linkShort, Hash: dbHash}
 	err = session.DB("tsuru").C("links").Insert(l)
 	return err
@@ -91,12 +104,34 @@ func checkError(err error) {
 	return
 }
 
-// Hash takes the URL, hashes & agregates the URL with your desired path
-func Hash(link, path string) (string, string) {
+func hash(link, path string) (string, string) {
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
 	linkShort := fmt.Sprintf("%sr/%x", path, hash)
 	dbHash := fmt.Sprintf("%x", hash)
 	return linkShort, dbHash
+}
+
+func validateURL(l string) bool {
+	isURL := govalidator.IsURL(l)
+	validURL := govalidator.IsRequestURL(l)
+	if isURL == false || validURL == false {
+		return false
+	}
+	return true
+}
+
+func checkMultiple(s string) ([]lines, bool) {
+	session, err := mgo.Dial("localhost")
+	defer session.Close()
+	checkError(err)
+
+	dbNum := []lines{}
+	err = session.DB("tsuru").C("links").Find(bson.M{"link": s}).All(&dbNum)
+	checkError(err)
+	if len(dbNum) > 1 {
+		return dbNum, true
+	}
+	return dbNum, false
 }
