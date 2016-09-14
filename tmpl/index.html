@@ -64,10 +64,10 @@
       <div class="col-md-8">
         <thead>
           <tr>
-            <div class="col-md-4 col-xs-4">
+            <div class="col-md-6">
               <th class="hidden-xs">Link</th>
             </div>
-            <div class="col-md-4 col-xs-10">
+            <div class="col-md-4 col-xs-4">
               <th>Short</th>
             </div>
             <div class="col-md-2 col-xs-2 text-center">
@@ -82,18 +82,23 @@
         <tbody>
           {{ range . }}
           <tr>
-            <td class="hidden-xs">
-              <a href="{{ .Link }}" class="hidden-xs">{{ .Link }}</a>
+            <div class="col-md-4">
+              <td class="hidden-xs">
+                <a href="{{ .Link }}" class="hidden-xs">{{ .Link }}</a>
               </td>
-
-            <td>
-              <a href="/r/{{ .Hash }}" target="_blank">{{ .Short }}</a>
-            </td>
-            <td>
-              <a href="/link/remove/{{ .Hash }}">
-                <img src="../css/img/trash-48.png">
-              </a>
-            </td>
+            </div>
+            <div class="col-md-4 col-xs-4">
+              <td>
+                <a href="/r/{{ .Hash }}" target="_blank">{{ .Short }}</a>
+              </td>
+            </div>
+            <div class="col-md-2 col-xs-2">
+              <td>
+                <a href="/link/remove/{{ .Hash }}">
+                  <img src="../css/img/trash-48.png">
+                </a>
+              </td>
+            </div>
           </tr>
           {{ end }}
         </tbody>

@@ -42,7 +42,7 @@ func Insert(link string, w http.ResponseWriter, r *http.Request) error {
 			return err
 		} else {
 			path := "http://localhost:8080/"
-			linkShort, dbHash := hash(link, path)
+			linkShort, dbHash := Hash(link, path)
 			l := &lines{Link: link, Short: linkShort, Hash: dbHash}
 			err = session.DB("tsuru").C("links").Insert(l)
 			return err
@@ -104,7 +104,8 @@ func checkError(err error) {
 	return
 }
 
-func hash(link, path string) (string, string) {
+// Hash creates & returns a link with the hashed URL and the URL hash
+func Hash(link, path string) (string, string) {
 	h := md5.New()
 	io.WriteString(h, link)
 	hash := string(h.Sum(nil))
