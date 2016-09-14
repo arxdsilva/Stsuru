@@ -39,19 +39,24 @@ func TestFindHash(t *testing.T) {
 		link, err := FindHash(test.hash)
 		if err != nil && test.isURL == false {
 			fmt.Print(".")
+			continue
 		}
 		if test.link == link {
 			fmt.Print(".")
+		} else {
+			fmt.Printf("Link %s expected but %s found", test.link, link)
 		}
+		continue
 	}
+	fmt.Println()
 }
 
 func TestGetAll(t *testing.T) {
 	fmt.Print("Test GetAll: ")
 	a, err := GetAll()
 	checkError(err)
-	if len(a) == 2 {
-		fmt.Print("..")
+	if len(a) == 3 {
+		fmt.Print("...")
 	} else {
 		fmt.Println()
 		fmt.Printf("Array bigger than expected, len == %v", len(a))
