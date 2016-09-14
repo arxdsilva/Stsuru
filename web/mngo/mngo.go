@@ -39,17 +39,17 @@ func Insert(link string, w http.ResponseWriter, r *http.Request) error {
 	if valid == true {
 		_, err = FindLink(link)
 		if err == nil {
-			http.Redirect(w, r, "/", http.StatusFound)
+			return err
+		} else {
+			path := "http://localhost:8080/"
+			linkShort, dbHash := hash(link, path)
+			l := &lines{Link: link, Short: linkShort, Hash: dbHash}
+			err = session.DB("tsuru").C("links").Insert(l)
+			return err
 		}
-	} else {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return nil
 	}
-	path := "http://localhost:8080/"
-	linkShort, dbHash := hash(link, path)
-	l := &lines{Link: link, Short: linkShort, Hash: dbHash}
-	err = session.DB("tsuru").C("links").Insert(l)
-	return err
+	http.Redirect(w, r, "/", http.StatusFound)
+	return nil
 }
 
 // Delete removes a link from Mongo
@@ -120,18 +120,4 @@ func validateURL(l string) bool {
 		return false
 	}
 	return true
-}
-
-func checkMultiple(s string) ([]lines, bool) {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
-	checkError(err)
-
-	dbNum := []lines{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"link": s}).All(&dbNum)
-	checkError(err)
-	if len(dbNum) > 1 {
-		return dbNum, true
-	}
-	return dbNum, false
 }

@@ -16,6 +16,8 @@ var testCases = []struct {
 	{"www.notvalidurl.netscape", "", false},
 	{"http://www.gorillatoolkit.org/pkg/mux", "70df8650c03c9fdfc959f04a64ecd956", true},
 	{"https://mail.google.com/mail/u/0/#inbox", "2122c5656da3d86d77c08f7af48c0268", true},
+	{"https://mail.google.com/mail/u/0/#inbox", "2122c5656da3d86d77c08f7af48c0268", true},
+	{"https://www.youtube.com/watch?v=grwx4OMfAn4", "678989a28d9b88ada6cc6678df8e6aa1", true},
 }
 
 func TestInsert(t *testing.T) {
@@ -29,6 +31,19 @@ func TestInsert(t *testing.T) {
 		fmt.Print(".")
 	}
 	fmt.Println()
+}
+
+func TestFindHash(t *testing.T) {
+	fmt.Print("Test FindHash: ")
+	for _, test := range testCases {
+		link, err := FindHash(test.hash)
+		if err != nil && test.isURL == false {
+			fmt.Print(".")
+		}
+		if test.link == link {
+			fmt.Print(".")
+		}
+	}
 }
 
 func TestGetAll(t *testing.T) {
