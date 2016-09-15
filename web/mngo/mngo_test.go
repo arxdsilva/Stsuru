@@ -2,7 +2,6 @@ package mngo
 
 import (
 	"fmt"
-	"net/http/httptest"
 	"testing"
 )
 
@@ -22,11 +21,8 @@ var testCases = []struct {
 
 func TestInsert(t *testing.T) {
 	fmt.Print("Test Insert: ")
-	r := httptest.NewRequest("POST", "/link/add", nil)
-	w := httptest.NewRecorder()
-
 	for _, test := range testCases {
-		err := Insert(test.link, w, r)
+		err := Insert(test.link)
 		checkError(err)
 		fmt.Print(".")
 	}
@@ -75,3 +71,16 @@ func TestDelete(t *testing.T) {
 	}
 	fmt.Println()
 }
+
+// type FakeStorage struct {
+// 	linkData []linkData
+// }
+//
+// func (s *FakeStorage) Insert(l linkData) error {
+// 	s.linkData = append(s.linkData, l)
+// 	return nil
+// }
+//
+// A() -> insert
+// A()
+// s.linkData[0] =
