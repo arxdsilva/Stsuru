@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strings"
 	"testing"
 
@@ -22,12 +23,16 @@ var testCases = []struct {
 }
 
 func TestHome(t *testing.T) {
+	dir := "../../"
+	err := os.Chdir(dir)
+	checkError(err)
 	fmt.Print("Testing Home: ")
 	r := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	Home(w, r)
 	if w.Code != http.StatusOK {
 		t.Errorf("Home page didn't return %v", http.StatusOK)
+		return
 	}
 	fmt.Println(".")
 }
@@ -67,7 +72,6 @@ func TestAddLink(t *testing.T) {
 		fmt.Print(". ")
 	}
 	fmt.Println()
-	fmt.Println()
 }
 
 func TestRedirect(t *testing.T) {
@@ -91,7 +95,6 @@ func TestRedirect(t *testing.T) {
 		}
 		fmt.Print("* ")
 	}
-	fmt.Println()
 	fmt.Println()
 }
 

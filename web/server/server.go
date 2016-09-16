@@ -37,15 +37,11 @@ func AddLink(w http.ResponseWriter, r *http.Request) {
 // Home querys Mongo for all It's elements and calls the specified HTML to load them into the page.
 func Home(w http.ResponseWriter, r *http.Request) {
 	path := "tmpl/index.html"
-	Data, err := mngo.GetAll()
+	d, err := mngo.GetAll()
 	checkError(err)
 	t, err := template.ParseFiles(path)
-	if err != nil {
-		fmt.Println(err)
-		fmt.Printf("could not find %s \n", path)
-		return
-	}
-	err = t.Execute(w, Data)
+	checkError(err)
+	err = t.Execute(w, d)
 	checkError(err)
 }
 
