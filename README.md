@@ -31,9 +31,8 @@ Open your **browser** and type:
 [`localhost:8080`](http://localhost:8080/)
 
 ## Contributing
-Any help is appreciated! Use [Issue tracker](https://github.com/arxdsilva/stsuru/issues) to report **any** problem or fill feature requests.
-
-Interested to help development? Fork the project and submit a [Pull Request](https://github.com/arxdsilva/stsuru/pulls).
+Have a look into our CONTRIBUTING file.
+If you contribute don't forget to add your name & e-mail to the **[CONTRIBUTORS](!https://github.com/arxdsilva/Stsuru/CONTRIBUTORS)** file.
 
 ## LICENSE
 Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
