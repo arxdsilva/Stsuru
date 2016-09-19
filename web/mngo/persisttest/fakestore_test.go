@@ -29,3 +29,16 @@ func TestList(t *testing.T) {
 	}
 	fmt.Println(".")
 }
+
+func TestRemove(t *testing.T) {
+	fmt.Print("Testing Remove: ")
+	s := FakeStorage{
+		Stored: expected,
+	}
+	for _, e := range expected {
+		err := s.Remove(e)
+		checkError(err)
+		fmt.Print(".")
+	}
+	fmt.Println()
+}

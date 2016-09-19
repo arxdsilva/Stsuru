@@ -1,25 +1,41 @@
 package persisttest
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
-// FakeStorage ...
+// FakeStorage commentary
 type FakeStorage struct {
-	stored                                                  []string
-	SaveErr, ListErr, RemoveErr, ExistHashErr, ExistLinkErr error
+	Stored                      []string
+	SaveErr, ListErr, RemoveErr error
 }
 
 // Save ....
 func (f *FakeStorage) Save(s string) error {
 	if f.SaveErr == nil {
-		f.stored = append(f.stored, s)
+		f.Stored = append(f.Stored, s)
 		return nil
 	}
+	f.SaveErr = fmt.Errorf("%s not saved", s)
 	return f.SaveErr
 }
 
-// List
+// List ...
 func (f *FakeStorage) List() ([]string, error) {
-	return f.stored, nil
+	return f.Stored, nil
+}
+
+// Remove ...
+func (f *FakeStorage) Remove(s string) error {
+	for i, e := range f.Stored {
+		if s == e {
+			f.Stored = append(f.Stored[:i], f.Stored[i+1:]...)
+			return nil
+		}
+	}
+	f.RemoveErr = fmt.Errorf("Could not remove %s", s)
+	return f.RemoveErr
 }
 
 func checkError(err error) error {
