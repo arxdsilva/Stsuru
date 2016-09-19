@@ -32,7 +32,8 @@ Open your **browser** and type:
 
 ## Contributing
 Have a look into our CONTRIBUTING file.
-If you contribute don't forget to add your name & e-mail to the **[CONTRIBUTORS](https://github.com/arxdsilva/Stsuru/CONTRIBUTORS)** file.
+If you contribute don't forget to add your name & e-mail to the **[CONTRIBUTORS](
+  https://github.com/arxdsilva/Stsuru/CONTRIBUTORS)** file.
 
 ## LICENSE
 Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
