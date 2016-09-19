@@ -21,7 +21,9 @@ func TestSave(t *testing.T) {
 
 func TestList(t *testing.T) {
 	fmt.Print("Testing List: ")
-	s := FakeStorage{}
+	s := FakeStorage{
+		Stored: expected,
+	}
 	list, err := s.List()
 	checkError(err)
 	if !reflect.DeepEqual(expected, list) {
