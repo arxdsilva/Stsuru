@@ -10,7 +10,7 @@ var expected = []string{"https://www.globo.com", "https://www.google.com"}
 
 func TestSave(t *testing.T) {
 	fmt.Print("Testing Save: ")
-	s := FakeStorage{}
+	s := FakeStore{}
 	for _, e := range expected {
 		err := s.Save(e)
 		checkError(err)
@@ -21,7 +21,7 @@ func TestSave(t *testing.T) {
 
 func TestList(t *testing.T) {
 	fmt.Print("Testing List: ")
-	s := FakeStorage{
+	s := FakeStore{
 		Stored: expected,
 	}
 	list, err := s.List()
@@ -34,7 +34,7 @@ func TestList(t *testing.T) {
 
 func TestRemove(t *testing.T) {
 	fmt.Print("Testing Remove: ")
-	s := FakeStorage{
+	s := FakeStore{
 		Stored: expected,
 	}
 	for _, e := range expected {
