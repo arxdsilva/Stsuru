@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/arxdsilva/Stsuru/web/mngo"
+	"github.com/arxdsilva/Stsuru/web/persist/mngo"
 	"github.com/gorilla/mux"
 )
 

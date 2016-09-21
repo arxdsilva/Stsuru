@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/arxdsilva/Stsuru/web/mngo"
+	"github.com/arxdsilva/Stsuru/web/persist/mngo"
 
 	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
