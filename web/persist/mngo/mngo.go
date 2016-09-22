@@ -12,18 +12,16 @@ import (
 	"gopkg.in/mgo.v2/bson"
 )
 
-// Storage is the interface of CRUD methods
-type Storage interface {
+// MongoStorage is the interface of CRUD methods
+type MongoStorage interface {
 	Insert(string) error
 	Delete(string) error
 	FindHash(string) error
 	FindLink(string) error
-	FindAll() error
+	GetAll() error
 }
 
-// Mongo ...
-type Mongo struct{}
-
+// LinkData holds the structure that is used by mongo to insert data to DB
 type LinkData struct {
 	Link  string
 	Short string
@@ -121,7 +119,7 @@ func validateURL(l string) bool {
 	return true
 }
 
-// CheckMultiple ...
+// CheckMultiple uses mongo to findout If a link was inserted twice
 func CheckMultiple(s string, i int) bool {
 	session, err := mgo.Dial("localhost")
 	defer session.Close()

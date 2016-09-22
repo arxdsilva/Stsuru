@@ -45,7 +45,7 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	checkError(err)
 }
 
-// CSS SHOULD load style into the page :p
+// CSS loads style into the page
 func CSS(w http.ResponseWriter, r *http.Request) {
 	http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))
 }
