@@ -17,9 +17,12 @@ $ go get -u github.com/arxdsilva/Stsuru
 ```
 
 ## Usage
+```shell
+$ cd (PATH)/github.com/arxdsilva/Stsuru
+```
 ### Tests
 ```shell
-$ go test
+$ go test -v ./...
 ```
 ### Start server
 ```shell
@@ -27,6 +30,11 @@ $ go run main.go
 ```
 Open your **browser** and type:
 [`localhost:8080`](http://localhost:8080/)
+### Build packages
+```shell
+$ go build
+```
+
 
 ## LICENSE
 Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.

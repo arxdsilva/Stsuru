@@ -1,24 +1,19 @@
 package mngo
 
 import (
-	"crypto/md5"
-	"fmt"
-	"io"
 	"log"
 
-	"github.com/asaskevich/govalidator"
+	"github.com/arxdsilva/Stsuru/web/persist"
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
 
 // MongoStorage is the interface of CRUD methods
-type MongoStorage interface {
-	Insert(string) error
-	Delete(string) error
-	FindHash(string) error
-	FindLink(string) error
-	GetAll() error
+type MongoStorage struct {
+	URL        string
+	DB         string
+	Collection string
 }
 
 // LinkData holds the structure that is used by mongo to insert data to DB
@@ -28,67 +23,66 @@ type LinkData struct {
 	Hash  string
 }
 
-// Insert inputs a link into Mongo
-func Insert(link string) error {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+// Save inputs a link into Mongo's DB
+func (m *MongoStorage) Save(link string) error {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
-	v := validateURL(link)
+	v := persist.ValidateURL(link)
 	if v == true {
-		_, err = FindLink(link)
+		_, err = m.FindLink(link)
 		if err == nil {
 			return err
 		}
-		path := "http://localhost:8080/"
-		linkShort, dbHash := Hash(link, path)
+		linkShort, dbHash := persist.Hash(link, m.URL)
 		l := &LinkData{Link: link, Short: linkShort, Hash: dbHash}
-		err = session.DB("tsuru").C("links").Insert(l)
+		err = s.DB(m.DB).C(m.Collection).Insert(l)
 		return err
 	}
 	return nil
 }
 
-// Delete removes a link from Mongo
-func Delete(h string) error {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+// Remove removes a link from Mongo
+func (m *MongoStorage) Remove(h string) error {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
 
-	c := session.DB("tsuru").C("links")
+	c := s.DB(m.DB).C(m.Collection)
 	err = c.Remove(bson.M{"hash": h})
 	return err
 }
 
 // FindHash finds an specific hash Stored on Mongo
-func FindHash(s string) (string, error) {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+func (m *MongoStorage) FindHash(hash string) (string, error) {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
 
 	dbData := LinkData{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"hash": s}).One(&dbData)
+	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"hash": hash}).One(&dbData)
 	return dbData.Link, err
 }
 
 // FindLink searches for an specific link inside Mongo
-func FindLink(s string) (string, error) {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+func (m *MongoStorage) FindLink(link string) (string, error) {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
 
 	dbData := LinkData{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"link": s}).One(&dbData)
+	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"link": link}).One(&dbData)
 	return dbData.Link, err
 }
 
 // GetAll queries for all entries
-func GetAll() ([]LinkData, error) {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+func (m *MongoStorage) GetAll() ([]LinkData, error) {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
 
 	Data := []LinkData{}
-	c := session.DB("tsuru").C("links")
+	c := s.DB(m.DB).C(m.Collection)
 	err = c.Find(bson.M{}).All(&Data)
 	return Data, err
 }
@@ -100,33 +94,14 @@ func checkError(err error) {
 	return
 }
 
-// Hash creates & returns a link with the hashed URL and the URL hash
-func Hash(link, path string) (string, string) {
-	h := md5.New()
-	io.WriteString(h, link)
-	hash := string(h.Sum(nil))
-	linkShort := fmt.Sprintf("%s%x", path, hash)
-	dbHash := fmt.Sprintf("%x", hash)
-	return linkShort, dbHash
-}
-
-func validateURL(l string) bool {
-	isURL := govalidator.IsURL(l)
-	validURL := govalidator.IsRequestURL(l)
-	if isURL == false || validURL == false {
-		return false
-	}
-	return true
-}
-
 // CheckMultiple uses mongo to findout If a link was inserted twice
-func CheckMultiple(s string, i int) bool {
-	session, err := mgo.Dial("localhost")
-	defer session.Close()
+func (m *MongoStorage) CheckMultiple(link string, i int) bool {
+	s, err := mgo.Dial(m.URL)
+	defer s.Close()
 	checkError(err)
 
 	dbNum := []LinkData{}
-	err = session.DB("tsuru").C("links").Find(bson.M{"link": s}).All(&dbNum)
+	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"link": link}).All(&dbNum)
 	checkError(err)
 	if len(dbNum) > i {
 		return true

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arxdsilva/Stsuru/web/persist"
 	"github.com/arxdsilva/Stsuru/web/persist/mngo"
 	"github.com/gorilla/mux"
 )
@@ -21,6 +22,7 @@ var testCases = []struct {
 	{"http://science.nasa.gov/", "af13587359208048616bfedcb3b4dbdc"},
 	{"https://godoc.org/gopkg.in/mgo.v2", "b5cfe5dac82a4a8af7a505891cd91729"},
 }
+var s = Server{}
 
 func TestHome(t *testing.T) {
 	dir := "../../"
@@ -29,7 +31,7 @@ func TestHome(t *testing.T) {
 	fmt.Print("Testing Home: ")
 	r := httptest.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
-	Home(w, r)
+	s.Home(w, r)
 	if w.Code != http.StatusOK {
 		t.Errorf("Home page didn't return %v", http.StatusOK)
 		return
@@ -52,6 +54,7 @@ func TestAddLink(t *testing.T) {
 		{"https://godoc.org/gopkg.in/mgo.v2", true},
 	}
 	v := url.Values{}
+	m := mngo.MongoStorage{}
 
 	fmt.Print("Test Add Link: ")
 	for _, test := range testURLs {
@@ -60,12 +63,12 @@ func TestAddLink(t *testing.T) {
 		r := httptest.NewRequest("POST", "/link/add", tf)
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		w := httptest.NewRecorder()
-		AddLink(w, r)
+		s.AddLink(w, r)
 		if w.Code != http.StatusFound {
 			t.Errorf("Home page didn't return %v", http.StatusFound)
 		}
 		i := 3
-		b := mngo.CheckMultiple(test.name, i)
+		b := m.CheckMultiple(test.name, i)
 		if b == true {
 			t.Errorf("MongoDB has multiple insertions of %s", test.name)
 		}
@@ -79,7 +82,7 @@ func TestRedirect(t *testing.T) {
 	for _, test := range testCases {
 		link := test.name
 		path := "/r/"
-		n, _ := mngo.Hash(link, path)
+		n, _ := persist.Hash(link, path)
 		r := httptest.NewRequest("GET", n, nil)
 		r.Header.Set("Content-Type", "text/html")
 		r.Header.Add("Accept", "text/html")
@@ -87,7 +90,7 @@ func TestRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		m := mux.NewRouter()
-		m.HandleFunc("/r/{id}", Redirect)
+		m.HandleFunc("/r/{id}", s.Redirect)
 		m.ServeHTTP(w, r)
 		if w.Code != http.StatusFound {
 			fmt.Printf("\nLink %s could not be solved by app\n", link)
@@ -103,7 +106,8 @@ func TestRemoveLink(t *testing.T) {
 	for _, test := range testCases {
 		path := "http://tsu.ru:8080/l/r/"
 		link := test.name
-		n, dbHash := mngo.Hash(link, path)
+		n, dbHash := persist.Hash(link, path)
+		ngo := mngo.MongoStorage{}
 
 		r := httptest.NewRequest("GET", n, nil)
 		r.Header.Set("Content-Type", "text/html")
@@ -111,10 +115,10 @@ func TestRemoveLink(t *testing.T) {
 		r.Header.Set("Accept", "application/xhtml+xml")
 		w := httptest.NewRecorder()
 		m := mux.NewRouter()
-		m.HandleFunc("/l/r/{id}", RemoveLink)
+		m.HandleFunc("/l/r/{id}", s.RemoveLink)
 		m.ServeHTTP(w, r)
 
-		_, err := mngo.FindHash(dbHash)
+		_, err := ngo.FindHash(dbHash)
 		if err == nil {
 			fmt.Printf("\n%s not expected on Mongo", dbHash)
 			continue

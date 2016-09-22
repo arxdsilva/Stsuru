@@ -19,10 +19,16 @@ var testCases = []struct {
 	{"https://www.youtube.com/watch?v=grwx4OMfAn4", "678989a28d9b88ada6cc6678df8e6aa1", true},
 }
 
+var s = MongoStorage{
+	URL:        "localhost",
+	DB:         "tsuru",
+	Collection: "links",
+}
+
 func TestInsert(t *testing.T) {
 	fmt.Print("Test Insert: ")
 	for _, test := range testCases {
-		err := Insert(test.link)
+		err := s.Save(test.link)
 		checkError(err)
 		fmt.Print(".")
 	}
@@ -32,7 +38,7 @@ func TestInsert(t *testing.T) {
 func TestFindHash(t *testing.T) {
 	fmt.Print("Test FindHash: ")
 	for _, test := range testCases {
-		link, err := FindHash(test.hash)
+		link, err := s.FindHash(test.hash)
 		if err != nil && test.isURL == false {
 			fmt.Print(".")
 			continue
@@ -49,7 +55,7 @@ func TestFindHash(t *testing.T) {
 
 func TestGetAll(t *testing.T) {
 	fmt.Print("Test GetAll: ")
-	a, err := GetAll()
+	a, err := s.GetAll()
 	checkError(err)
 	if len(a) == 3 {
 		fmt.Print("...")
@@ -63,7 +69,7 @@ func TestGetAll(t *testing.T) {
 func TestDelete(t *testing.T) {
 	fmt.Print("Test Delete: ")
 	for _, test := range testCases {
-		err := Delete(test.hash)
+		err := s.Remove(test.hash)
 		if err != nil {
 			continue
 		}
@@ -71,16 +77,3 @@ func TestDelete(t *testing.T) {
 	}
 	fmt.Println()
 }
-
-// type FakeStorage struct {
-// 	linkData []linkData
-// }
-//
-// func (s *FakeStorage) Insert(l linkData) error {
-// 	s.linkData = append(s.linkData, l)
-// 	return nil
-// }
-//
-// A() -> insert
-// A()
-// s.linkData[0] =

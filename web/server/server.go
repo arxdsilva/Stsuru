@@ -5,39 +5,44 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/arxdsilva/Stsuru/web/persist/mngo"
+	"github.com/arxdsilva/Stsuru/web/persist"
 
 	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
 )
 
+// Server is a struct that implements ...
+type Server struct {
+	Storage persist.Storage
+}
+
 // Listen Registers the routes used by Stsuru
-func Listen() {
+func (s *Server) Listen() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", Home)
+	r.HandleFunc("/", s.Home)
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css/"))))
-	r.HandleFunc("/r/{id}", Redirect)
-	r.HandleFunc("/link/add", AddLink)
-	r.HandleFunc("/l/r/{id}", RemoveLink)
+	r.HandleFunc("/r/{id}", s.Redirect)
+	r.HandleFunc("/link/add", s.AddLink)
+	r.HandleFunc("/l/r/{id}", s.RemoveLink)
 	http.Handle("/", r)
 	fmt.Println("The server is now live @ localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }
 
 // AddLink validates the request's URL and asks Mongo to add It on list
-func AddLink(w http.ResponseWriter, r *http.Request) {
+func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	l := r.Form["user_link"][0]
-	err := mngo.Insert(l)
+	err := s.Storage.Save(l)
 	checkError(err)
 	http.Redirect(w, r, "/", http.StatusFound)
 	return
 }
 
 // Home querys Mongo for all It's elements and calls the specified HTML to load them into the page.
-func Home(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
 	path := "tmpl/index.html"
-	d, err := mngo.GetAll()
+	d, err := s.Storage.List()
 	checkError(err)
 	t, err := template.ParseFiles(path)
 	checkError(err)
@@ -51,18 +56,18 @@ func CSS(w http.ResponseWriter, r *http.Request) {
 }
 
 // RemoveLink searches db for a certain link & removes It if It exists
-func RemoveLink(w http.ResponseWriter, r *http.Request) {
+func (s *Server) RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
-	mngo.Delete(idInfo)
+	s.Storage.Remove(idInfo)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // Redirect takes the hashed URL and checks Mongo If It exists;
-func Redirect(w http.ResponseWriter, r *http.Request) {
+func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idInfo := id["id"]
-	l, err := mngo.FindHash(idInfo)
+	l, err := s.Storage.FindHash(idInfo)
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusNotFound)
 	}
