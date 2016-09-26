@@ -3,8 +3,6 @@ package mngo
 import (
 	"log"
 
-	"github.com/arxdsilva/Stsuru/web/persist"
-
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -24,32 +22,26 @@ type LinkData struct {
 }
 
 // Save inputs a link into Mongo's DB
-func (m *MongoStorage) Save(link string) error {
+func (m *MongoStorage) Save(link, linkShort, dbHash string) error {
 	s, err := mgo.Dial(m.URL)
 	defer s.Close()
 	checkError(err)
-	v := persist.ValidateURL(link)
-	if v == true {
-		_, err = m.FindLink(link)
-		if err == nil {
-			return err
-		}
-		linkShort, dbHash := persist.Hash(link, m.URL)
-		l := &LinkData{Link: link, Short: linkShort, Hash: dbHash}
-		err = s.DB(m.DB).C(m.Collection).Insert(l)
+	l := &LinkData{Link: link, Short: linkShort, Hash: dbHash}
+	err = s.DB(m.DB).C(m.Collection).Insert(l)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
 // Remove removes a link from Mongo
-func (m *MongoStorage) Remove(h string) error {
+func (m *MongoStorage) Remove(hash string) error {
 	s, err := mgo.Dial(m.URL)
 	defer s.Close()
 	checkError(err)
 
 	c := s.DB(m.DB).C(m.Collection)
-	err = c.Remove(bson.M{"hash": h})
+	err = c.Remove(bson.M{"hash": hash})
 	return err
 }
 

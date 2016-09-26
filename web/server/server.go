@@ -1,22 +1,26 @@
 package server
 
 import (
+	"crypto/md5"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 
 	"github.com/arxdsilva/Stsuru/web/persist"
+	"github.com/asaskevich/govalidator"
 
 	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
 )
 
-// Server is a struct that implements ...
+// Server ...
 type Server struct {
 	Storage persist.Storage
+	URL     string
 }
 
-// Listen Registers the routes used by Stsuru
+// Listen Registers the routes used by Stsuru and redirects traffic
 func (s *Server) Listen() {
 	r := mux.NewRouter()
 	r.HandleFunc("/", s.Home)
@@ -32,14 +36,24 @@ func (s *Server) Listen() {
 // AddLink validates the request's URL and asks Mongo to add It on list
 func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	l := r.Form["user_link"][0]
-	err := s.Storage.Save(l)
+	link := r.Form["user_link"][0]
+	v := validateURL(link)
+	if !v {
+		http.Redirect(w, r, "/", http.StatusNotModified)
+		return
+	}
+	linkshort, dbHash := hash(link, s.URL)
+	_, err := s.Storage.FindHash(dbHash)
+	if err != nil {
+		http.Redirect(w, r, "/", http.StatusMultipleChoices)
+		return
+	}
+	err = s.Storage.Save(link, linkshort, dbHash)
 	checkError(err)
 	http.Redirect(w, r, "/", http.StatusFound)
-	return
 }
 
-// Home querys Mongo for all It's elements and calls the specified HTML to load them into the page.
+// Home querys Storage for all It's elements and calls the specified HTML to load them into the page.
 func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
 	path := "tmpl/index.html"
 	d, err := s.Storage.List()
@@ -58,20 +72,21 @@ func CSS(w http.ResponseWriter, r *http.Request) {
 // RemoveLink searches db for a certain link & removes It if It exists
 func (s *Server) RemoveLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
-	idInfo := id["id"]
-	s.Storage.Remove(idInfo)
+	idHash := id["id"]
+	s.Storage.Remove(idHash)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
 // Redirect takes the hashed URL and checks Mongo If It exists;
 func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
-	idInfo := id["id"]
-	l, err := s.Storage.FindHash(idInfo)
+	idHash := id["id"]
+	l, err := s.Storage.FindHash(idHash)
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusNotFound)
+		http.Redirect(w, r, l, http.StatusFound)
+		return
 	}
-	http.Redirect(w, r, l, http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusNotFound)
 }
 
 func checkError(err error) {
@@ -79,4 +94,22 @@ func checkError(err error) {
 		log.Panic(err)
 	}
 	return
+}
+
+func hash(link, path string) (string, string) {
+	h := md5.New()
+	io.WriteString(h, link)
+	hash := string(h.Sum(nil))
+	linkShort := fmt.Sprintf("%s%x", path, hash)
+	dbHash := fmt.Sprintf("%x", hash)
+	return linkShort, dbHash
+}
+
+func validateURL(l string) bool {
+	isURL := govalidator.IsURL(l)
+	validURL := govalidator.IsRequestURL(l)
+	if isURL == false || validURL == false {
+		return false
+	}
+	return true
 }

@@ -6,17 +6,51 @@ import (
 )
 
 var testCases = []struct {
-	link  string
-	hash  string
-	isURL bool
+	link, linkShort, hash string
+	isURL                 bool
 }{
-	{"abcdef", "", false},
-	{"www.globo.com", "", false},
-	{"www.notvalidurl.netscape", "", false},
-	{"http://www.gorillatoolkit.org/pkg/mux", "70df8650c03c9fdfc959f04a64ecd956", true},
-	{"https://mail.google.com/mail/u/0/#inbox", "2122c5656da3d86d77c08f7af48c0268", true},
-	{"https://mail.google.com/mail/u/0/#inbox", "2122c5656da3d86d77c08f7af48c0268", true},
-	{"https://www.youtube.com/watch?v=grwx4OMfAn4", "678989a28d9b88ada6cc6678df8e6aa1", true},
+	{
+		"abcdef",
+		"",
+		"",
+		false,
+	},
+	{
+		"www.globo.com",
+		"",
+		"",
+		false,
+	},
+	{
+		"www.notvalidurl.netscape",
+		"",
+		"",
+		false,
+	},
+	{
+		"http://www.gorillatoolkit.org/pkg/mux",
+		"",
+		"70df8650c03c9fdfc959f04a64ecd956",
+		true,
+	},
+	{
+		"https://mail.google.com/mail/u/0/#inbox",
+		"",
+		"2122c5656da3d86d77c08f7af48c0268",
+		true,
+	},
+	{
+		"https://mail.google.com/mail/u/0/#inbox",
+		"",
+		"2122c5656da3d86d77c08f7af48c0268",
+		true,
+	},
+	{
+		"https://www.youtube.com/watch?v=grwx4OMfAn4",
+		"",
+		"678989a28d9b88ada6cc6678df8e6aa1",
+		true,
+	},
 }
 
 var s = MongoStorage{
@@ -28,7 +62,7 @@ var s = MongoStorage{
 func TestInsert(t *testing.T) {
 	fmt.Print("Test Insert: ")
 	for _, test := range testCases {
-		err := s.Save(test.link)
+		err := s.Save(test.link, test.linkShort, test.hash)
 		checkError(err)
 		fmt.Print(".")
 	}
@@ -45,8 +79,6 @@ func TestFindHash(t *testing.T) {
 		}
 		if test.link == link {
 			fmt.Print(".")
-		} else {
-			fmt.Printf("Link %s expected but %s found", test.link, link)
 		}
 		continue
 	}

@@ -8,29 +8,47 @@ import (
 )
 
 var expected = []Stored{
-	{"http://localhost:8080/", "9825c2a542dd888e55b9b0e06b04f672"},
-	{"http://science.nasa.gov/", "af13587359208048616bfedcb3b4dbdc"},
+	{
+		"http://localhost:8080/",
+		"http://localhost:8080/9825c2a542dd888e55b9b0e06b04f672",
+		"9825c2a542dd888e55b9b0e06b04f672",
+	},
+	{
+		"http://science.nasa.gov/",
+		"http://localhost:8080/af13587359208048616bfedcb3b4dbdc",
+		"af13587359208048616bfedcb3b4dbdc",
+	},
 }
 var notexpected = []struct {
-	url   string
-	value bool
+	link, linkShort, Hash string
+	value                 bool
 }{
-	{"ssssssscience.nasa.gov/", false},
-	{"https://mail.google.com/mail/u/1/#inbox", false},
+	{
+		"ssssssscience.nasa.gov/",
+		"",
+		"",
+		false,
+	},
+	{
+		"https://mail.google.com/mail/u/1/#inbox",
+		"",
+		"",
+		false,
+	},
 }
 
 func TestSave(t *testing.T) {
 	fmt.Print("Testing Save: ")
 	s := FakeStore{}
 	for _, e := range expected {
-		err := s.Save(e.Link)
+		err := s.Save(e.Link, e.LinkShort, e.Hash)
 		checkError(err)
 		fmt.Print(".")
 	}
 	s.SaveErr = fmt.Errorf("not found")
 	for _, e := range notexpected {
-		err := s.Save(e.url)
-		if err == fmt.Errorf("%s not saved", e.url) {
+		err := s.Save(e.link, e.linkShort, e.Hash)
+		if err != nil {
 			fmt.Print(".")
 		}
 	}
@@ -64,12 +82,12 @@ func TestExists(t *testing.T) {
 		log.Panicf("Element %s could not be found on slice %v", e.Link, expected)
 	}
 	for _, e := range notexpected {
-		r := s.Exists(e.url)
+		r := s.Exists(e.link)
 		if r == e.value {
 			fmt.Print(".")
 			continue
 		}
-		log.Panicf("Element %s should not be found on slice %v", e.url, expected)
+		log.Panicf("Element %s should not be found on slice %v", e.link, expected)
 	}
 	fmt.Println()
 }
@@ -82,12 +100,13 @@ func TestFindHash(t *testing.T) {
 	for _, e := range expected {
 		_, err := s.FindHash(e.Hash)
 		if err != nil {
-			log.Panicf("Element %s was not found in %v", e.Hash, expected)
+			fmt.Print(".")
+			continue
 		}
-		fmt.Print(".")
+		log.Panicf("Element %s was not found in %v", e.Hash, expected)
 	}
 	for _, e := range notexpected {
-		_, err := s.FindHash(e.url)
+		_, err := s.FindHash(e.link)
 		if err != nil {
 			fmt.Print(".")
 		}
@@ -106,7 +125,7 @@ func TestRemove(t *testing.T) {
 		fmt.Print(".")
 	}
 	for _, e := range notexpected {
-		err := s.Remove(e.url)
+		err := s.Remove(e.link)
 		if err != nil {
 			fmt.Print(".")
 			continue
