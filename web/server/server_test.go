@@ -14,6 +14,14 @@ import (
 	"github.com/gorilla/mux"
 )
 
+var mongo = persist.MongoStorage{
+	URL:        "localhost",
+	DB:         "tsuru",
+	Collection: "links",
+}
+
+var svr = Server{Storage: mongo}
+
 var testCases = []struct {
 	name string
 	hash string
