@@ -11,7 +11,7 @@ Implementation of a simple link shortener in Golang. Intended to `hash` & `displ
 
 ## Instalation
 ### Go Get
-- _dont forget to **Star** the repository!_
+- _If you enjoy, dont forget to **Star** the repository! :)_
 The easiest way is to install with go get (**needed Golang 1.7 or later installed**):
 ```shell
 $ go get -u github.com/arxdsilva/Stsuru
