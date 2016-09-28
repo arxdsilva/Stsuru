@@ -3,35 +3,42 @@ package shortener
 import (
 	"crypto/md5"
 	"fmt"
-	"io"
+	"net/url"
 
 	"github.com/asaskevich/govalidator"
 )
 
-// NewLink ...
-func NewLink(link, path string) (string, string, error) {
-	v := validateURL(link)
-	if !v {
-		return "", "", fmt.Errorf("Given link: `%s` is Not a valid URL", link)
+// Shorten does the hard work about making your url small
+func Shorten(u *url.URL, customHost string) (*url.URL, error) {
+	err := validateURL(u)
+	if err != nil {
+		return nil, err
 	}
-	hashedPath, hashNum := hash(link, path)
-	return hashNum, hashedPath, nil
+	hash := hashGenerator(u)
+	switch customHost {
+	case "":
+		return &url.URL{
+			Scheme: "https",
+			Host:   u.Host,
+			Path:   hash,
+		}, nil
+	default:
+		return &url.URL{
+			Scheme: "https",
+			Host:   customHost,
+			Path:   hash,
+		}, nil
+	}
 }
 
-func hash(link, path string) (string, string) {
-	h := md5.New()
-	io.WriteString(h, link)
-	hash := string(h.Sum(nil))
-	linkShort := fmt.Sprintf("%s%x", path, hash)
-	dbHash := fmt.Sprintf("%x", hash)
-	return linkShort, dbHash
+func hashGenerator(u *url.URL) string {
+	return fmt.Sprintf("%x", md5.Sum([]byte(u.String())))
 }
 
-func validateURL(l string) bool {
-	isURL := govalidator.IsURL(l)
-	validURL := govalidator.IsRequestURL(l)
-	if isURL == false || validURL == false {
-		return false
+func validateURL(u *url.URL) error {
+	valid := govalidator.IsRequestURL(u.String())
+	if valid == false {
+		return fmt.Errorf("%v is a invalid url", u.String()) // probably would want a bit more informational error?
 	}
-	return true
+	return nil
 }
