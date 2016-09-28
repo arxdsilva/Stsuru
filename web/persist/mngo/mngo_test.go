@@ -86,12 +86,15 @@ func TestFindHash(t *testing.T) {
 }
 
 func TestGetAll(t *testing.T) {
+	// Teste esta falhando pois estou usando o MongoStorage da linha 56, quando deveria usar persist.Storage ... (p/ usar os comportamentos de Storage)
+	// Melhorar mensagens de erro nesse teste.
 	fmt.Print("Test GetAll: ")
 	a, err := s.GetAll()
 	checkError(err)
 	if len(a) == 3 {
 		fmt.Print("...")
 	} else {
+		fmt.Println(a)
 		fmt.Println()
 		fmt.Printf("Array bigger than expected, len == %v", len(a))
 	}
