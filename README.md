@@ -7,11 +7,12 @@
 - Written in [Go](http://golang.org);
 
 ## Introduction
-Implementation of a simple link shortener in Golang. Intended to `hash` & `display` sortened URL's in a 'pure' Golang's server. It uses Gorilla's mux to handle server requests.
+Implementation of a simple URL shortener in Golang. Intended to `hash` & `display` sortened URL's in a 'pure' Golang's server. It uses Gorilla's mux to handle server requests.
 
 ## Instalation
 ### Go Get
 - _If you enjoy, dont forget to **Star** the repository! :)_
+
 The easiest way is to install with go get (**needed Golang 1.7 or later installed**):
 ```shell
 $ go get -u github.com/arxdsilva/Stsuru
