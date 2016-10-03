@@ -74,7 +74,7 @@ func TestExists(t *testing.T) {
 	}
 	for _, e := range expected {
 		result := s.Exists(e.Link)
-		if result == true {
+		if result {
 			fmt.Print(".")
 			continue
 		}

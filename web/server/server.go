@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 
 	"github.com/arxdsilva/Stsuru/web/persist"
@@ -46,7 +45,10 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	_, err := s.Storage.FindHash(dbHash)
 	if err != nil {
 		err = s.Storage.Save(link, linkshort, dbHash)
-		checkError(err)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
@@ -57,11 +59,20 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
 	path := "tmpl/index.html"
 	d, err := s.Storage.List()
-	checkError(err)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	t, err := template.ParseFiles(path)
-	checkError(err)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	err = t.Execute(w, d)
-	checkError(err)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // CSS loads style into the page
@@ -90,13 +101,6 @@ func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func checkError(err error) {
-	if err != nil {
-		log.Panic(err)
-	}
-	return
-}
-
 func hash(link, path string) (string, string) {
 	h := md5.New()
 	io.WriteString(h, link)
@@ -109,7 +113,7 @@ func hash(link, path string) (string, string) {
 func validateURL(l string) bool {
 	isURL := govalidator.IsURL(l)
 	validURL := govalidator.IsRequestURL(l)
-	if isURL == false || validURL == false {
+	if !isURL || !validURL {
 		return false
 	}
 	return true
