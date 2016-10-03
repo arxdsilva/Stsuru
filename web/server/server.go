@@ -45,12 +45,12 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	linkshort, dbHash := hash(link, s.URL)
 	_, err := s.Storage.FindHash(dbHash)
 	if err != nil {
-		http.Redirect(w, r, "/", http.StatusMultipleChoices)
+		err = s.Storage.Save(link, linkshort, dbHash)
+		checkError(err)
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
-	err = s.Storage.Save(link, linkshort, dbHash)
-	checkError(err)
-	http.Redirect(w, r, "/", http.StatusFound)
+	http.Redirect(w, r, "/", http.StatusNotModified)
 }
 
 // Home querys Storage for all It's elements and calls the specified HTML to load them into the page.
@@ -83,10 +83,11 @@ func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	idHash := id["id"]
 	l, err := s.Storage.FindHash(idHash)
 	if err != nil {
-		http.Redirect(w, r, l, http.StatusFound)
+		http.Redirect(w, r, l, http.StatusNotFound)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusNotFound)
+	http.Redirect(w, r, "/", http.StatusFound)
+
 }
 
 func checkError(err error) {

@@ -2,7 +2,6 @@ package persist
 
 import (
 	"fmt"
-	"log"
 	"reflect"
 	"testing"
 )
@@ -63,7 +62,7 @@ func TestList(t *testing.T) {
 	list, err := s.List()
 	checkError(err)
 	if !reflect.DeepEqual(expected, list) {
-		log.Panicf("List %v is not equal to list %v", list, expected)
+		t.Errorf("List %v is not equal to list %v", list, expected)
 	}
 	fmt.Println(".")
 }
@@ -79,7 +78,7 @@ func TestExists(t *testing.T) {
 			fmt.Print(".")
 			continue
 		}
-		log.Panicf("Element %s could not be found on slice %v", e.Link, expected)
+		t.Errorf("Element %s could not be found on slice %v", e.Link, expected)
 	}
 	for _, e := range notexpected {
 		r := s.Exists(e.link)
@@ -87,7 +86,7 @@ func TestExists(t *testing.T) {
 			fmt.Print(".")
 			continue
 		}
-		log.Panicf("Element %s should not be found on slice %v", e.link, expected)
+		t.Errorf("Element %s should not be found on slice %v", e.link, expected)
 	}
 	fmt.Println()
 }
@@ -100,10 +99,11 @@ func TestFindHash(t *testing.T) {
 	for _, e := range expected {
 		_, err := s.FindHash(e.Hash)
 		if err != nil {
-			fmt.Print(".")
+			t.Errorf("Element %s was not found in %v", e.Hash, expected)
 			continue
 		}
-		log.Panicf("Element %s was not found in %v", e.Hash, expected)
+		fmt.Print(".")
+		continue
 	}
 	for _, e := range notexpected {
 		_, err := s.FindHash(e.link)
@@ -130,7 +130,7 @@ func TestRemove(t *testing.T) {
 			fmt.Print(".")
 			continue
 		}
-		log.Panicf("Expected %s and received %v", "not found", err)
+		t.Errorf("Expected %s and received %v", "not found", err)
 	}
 	fmt.Println()
 }

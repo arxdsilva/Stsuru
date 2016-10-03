@@ -6,9 +6,6 @@ import (
 )
 
 func main() {
-	// mongo := persist.FakeStore{
-	// 	URL: "localhost",
-	// }
 	s := server.Server{Storage: &persist.FakeStore{}}
 	s.Listen()
 }

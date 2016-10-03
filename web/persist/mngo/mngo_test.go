@@ -62,9 +62,11 @@ var s = MongoStorage{
 func TestInsert(t *testing.T) {
 	fmt.Print("Test Insert: ")
 	for _, test := range testCases {
-		err := s.Save(test.link, test.linkShort, test.hash)
-		checkError(err)
-		fmt.Print(".")
+		if !test.isURL {
+			err := s.Save(test.link, test.linkShort, test.hash)
+			checkError(err)
+			fmt.Print(".")
+		}
 	}
 	fmt.Println()
 }
@@ -94,15 +96,13 @@ func TestGetAll(t *testing.T) {
 	if len(a) == 3 {
 		fmt.Print("...")
 	} else {
-		fmt.Println(a)
-		fmt.Println()
-		fmt.Printf("Array bigger than expected, len == %v", len(a))
+		t.Errorf("Array bigger than expected, len == %v, expected = %v", len(a), 3)
 	}
 	fmt.Println()
 }
 
-func TestDelete(t *testing.T) {
-	fmt.Print("Test Delete: ")
+func TestRemove(t *testing.T) {
+	fmt.Print("Test Remove: ")
 	for _, test := range testCases {
 		err := s.Remove(test.hash)
 		if err != nil {

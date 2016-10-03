@@ -15,12 +15,14 @@ import (
 )
 
 var testCases = []struct {
-	name string
-	hash string
+	name     string
+	hash     string
+	expected int
 }{
-	{"http://localhost:8080/", "9825c2a542dd888e55b9b0e06b04f672"},
-	{"http://science.nasa.gov/", "af13587359208048616bfedcb3b4dbdc"},
-	{"https://godoc.org/gopkg.in/mgo.v2", "b5cfe5dac82a4a8af7a505891cd91729"},
+	{"http://localhost:8080/", "9825c2a542dd888e55b9b0e06b04f672", http.StatusFound},
+	{"http://science.nasa.gov/", "af13587359208048616bfedcb3b4dbdc", http.StatusFound},
+	{"https://godoc.org/gopkg.in/mgo.v2", "b5cfe5dac82a4a8af7a505891cd91729", http.StatusFound},
+	{"http://jordanorelli.com/post/32665860244/how-to-use-interfaces-in-go", "", http.StatusNotFound},
 }
 var s = Server{Storage: &persist.FakeStore{}}
 
@@ -51,7 +53,7 @@ func TestAddLink(t *testing.T) {
 		{"http://science.nasa.gov/", http.StatusFound},
 		{"multiple.dots.not.valid.url", http.StatusNotModified},
 		{"https://godoc.org/gopkg.in/mgo.v2", http.StatusFound},
-		{"https://godoc.org/gopkg.in/mgo.v2", http.StatusMultipleChoices},
+		{"https://godoc.org/gopkg.in/mgo.v2", http.StatusNotModified},
 	}
 	v := url.Values{}
 
@@ -80,7 +82,7 @@ func TestAddLink(t *testing.T) {
 }
 
 func TestRedirect(t *testing.T) {
-	fmt.Print("Test Link Solver: ")
+	fmt.Print("Test Redirect: ")
 	for _, test := range testCases {
 		link := test.name
 		path := "/r/"
@@ -94,8 +96,8 @@ func TestRedirect(t *testing.T) {
 		m := mux.NewRouter()
 		m.HandleFunc("/r/{id}", s.Redirect)
 		m.ServeHTTP(w, r)
-		if w.Code != http.StatusFound {
-			fmt.Printf("\nLink %s got %v instead of %v\n", link, w.Code, http.StatusFound)
+		if w.Code != test.expected {
+			t.Errorf("\nLink %s got %v instead of %v\n", link, w.Code, test.expected)
 			continue
 		}
 		fmt.Print("* ")

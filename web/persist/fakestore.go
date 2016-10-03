@@ -18,7 +18,7 @@ type FakeStore struct {
 }
 
 // Save ...
-func (f *FakeStore) Save(link, linkShort, dbHash string) error {
+func (f *FakeStore) Save(link, lShort, dbHash string) error {
 	n := Stored{
 		Link: link,
 		Hash: dbHash,
@@ -62,10 +62,10 @@ func (f *FakeStore) Exists(s string) bool {
 func (f *FakeStore) FindHash(s string) (string, error) {
 	for _, e := range f.Stored {
 		if e.Hash == s {
-			return e.Link, fmt.Errorf("Found")
+			return e.Link, nil
 		}
 	}
-	return s, nil
+	return s, fmt.Errorf("Not Found")
 }
 
 func checkError(err error) error {
