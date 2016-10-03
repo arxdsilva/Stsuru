@@ -102,7 +102,7 @@ func Test_validateURL(t *testing.T) {
 					Path:   "",
 				},
 			},
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
