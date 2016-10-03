@@ -2,6 +2,8 @@ package shortener
 
 import (
 	"crypto/md5"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"net/url"
 
@@ -32,13 +34,21 @@ func Shorten(u *url.URL, customHost string) (*url.URL, error) {
 }
 
 func hashGenerator(u *url.URL) string {
-	return fmt.Sprintf("%x", md5.Sum([]byte(u.String())))
+	hasher := md5.New()
+	hasher.Write([]byte(u.String()))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 func validateURL(u *url.URL) error {
 	valid := govalidator.IsRequestURL(u.String())
 	if valid == false {
-		return fmt.Errorf("%v is a invalid url", u.String()) // probably would want a bit more informational error?
+		return fmt.Errorf("%v is a invalid url", u.String())
 	}
 	return nil
+}
+
+func tokenGenerator() string {
+	b := make([]byte, 4)
+	rand.Read(b)
+	return fmt.Sprintf("%x", b)
 }
