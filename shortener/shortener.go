@@ -40,8 +40,9 @@ func hashGenerator(u *url.URL) string {
 }
 
 func validateURL(u *url.URL) error {
+	v := govalidator.IsURL(u.String())
 	valid := govalidator.IsRequestURL(u.String())
-	if valid == false {
+	if !valid || !v {
 		return fmt.Errorf("%v is a invalid url", u.String())
 	}
 	return nil
