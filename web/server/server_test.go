@@ -29,9 +29,14 @@ var s = Server{Storage: &persist.FakeStore{}}
 func TestHome(t *testing.T) {
 	dir := "../../"
 	err := os.Chdir(dir)
-	checkError(err)
+	if err != nil {
+		t.Fatalf("unexpected error changing dir: %v", err)
+	}
 	fmt.Print("Testing Home: ")
-	r := httptest.NewRequest("GET", "/", nil)
+	r, err := http.NewRequest("GET", "/", nil)
+	if err != nil {
+		t.Fatalf("unexpected error new request: %v", err)
+	}
 	w := httptest.NewRecorder()
 	s.Home(w, r)
 	if w.Code != http.StatusOK {
@@ -61,7 +66,10 @@ func TestAddLink(t *testing.T) {
 	for _, test := range testURLs {
 		v.Set("user_link", test.name)
 		tf := strings.NewReader(v.Encode())
-		r := httptest.NewRequest("POST", "/link/add", tf)
+		r, err := http.NewRequest("POST", "/link/add", tf)
+		if err != nil {
+			t.Fatalf("unexpected error new request: %v", err)
+		}
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		w := httptest.NewRecorder()
 		s.AddLink(w, r)
@@ -73,7 +81,9 @@ func TestAddLink(t *testing.T) {
 	}
 	i := 3
 	stored, err := s.Storage.List()
-	checkError(err)
+	if err != nil {
+		t.Fatalf("unexpected error storage list: %v", err)
+	}
 	if len(stored) != i {
 		t.Errorf("Storage has inserted multiple equal URLs")
 	}
@@ -87,7 +97,10 @@ func TestRedirect(t *testing.T) {
 		link := test.name
 		path := "/r/"
 		n, _ := hash(link, path)
-		r := httptest.NewRequest("GET", n, nil)
+		r, err := http.NewRequest("GET", n, nil)
+		if err != nil {
+			t.Fatalf("unexpected error new request: %v", err)
+		}
 		r.Header.Set("Content-Type", "text/html")
 		r.Header.Add("Accept", "text/html")
 		r.Header.Set("Accept", "application/xhtml+xml")
@@ -113,7 +126,10 @@ func TestRemoveLink(t *testing.T) {
 		n, dbHash := hash(link, path)
 		ngo := mngo.MongoStorage{}
 
-		r := httptest.NewRequest("GET", n, nil)
+		r, err := http.NewRequest("GET", n, nil)
+		if err != nil {
+			t.Fatalf("unexpected error new request: %v", err)
+		}
 		r.Header.Set("Content-Type", "text/html")
 		r.Header.Add("Accept", "text/html")
 		r.Header.Set("Accept", "application/xhtml+xml")
@@ -122,7 +138,7 @@ func TestRemoveLink(t *testing.T) {
 		m.HandleFunc("/l/r/{id}", s.RemoveLink)
 		m.ServeHTTP(w, r)
 
-		_, err := ngo.FindHash(dbHash)
+		_, err = ngo.FindHash(dbHash)
 		if err == nil {
 			fmt.Printf("\n%s not expected on Mongo", dbHash)
 			continue

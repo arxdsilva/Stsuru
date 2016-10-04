@@ -64,7 +64,9 @@ func TestInsert(t *testing.T) {
 	for _, test := range testCases {
 		if !test.isURL {
 			err := s.Save(test.link, test.linkShort, test.hash)
-			checkError(err)
+			if err != nil {
+				t.Fatalf("unexpected save error: %v", err)
+			}
 			fmt.Print(".")
 		}
 	}
@@ -75,7 +77,7 @@ func TestFindHash(t *testing.T) {
 	fmt.Print("Test FindHash: ")
 	for _, test := range testCases {
 		link, err := s.FindHash(test.hash)
-		if err != nil && test.isURL == false {
+		if err != nil && !test.isURL {
 			fmt.Print(".")
 			continue
 		}
@@ -92,7 +94,9 @@ func TestGetAll(t *testing.T) {
 	// Melhorar mensagens de erro nesse teste.
 	fmt.Print("Test GetAll: ")
 	a, err := s.GetAll()
-	checkError(err)
+	if err != nil {
+		t.Fatalf("unexpected error getall: %v", err)
+	}
 	if len(a) == 3 {
 		fmt.Print("...")
 	} else {
