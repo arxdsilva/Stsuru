@@ -55,26 +55,32 @@ func TestShorten(t *testing.T) {
 			},
 			wantErr: false,
 		},
-		// {
-		// 	name: "test03",
-		// 	args: args{
-		// 		u: &url.URL{
-		// 			Scheme: "https",
-		// 			Host:   "notvalid",
-		// 			Path:   "",
-		// 		},
-		// 		customHost: custom,
-		// 	},
-		// 	want:    &url.URL{},
-		// 	wantErr: true,
-		// },
+		{
+			name: "test03",
+			args: args{
+				u: &url.URL{
+					Scheme: "https",
+					Host:   "notvalid",
+					Path:   "",
+				},
+				customHost: custom,
+			},
+			want:    &url.URL{},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
-		got, err := Shorten(tt.args.u, tt.args.customHost)
+		a := NewShorten{
+			U:          tt.args.u,
+			CustomHost: tt.args.customHost,
+			Token:      "a",
+		}
+		got, err := a.Shorten()
 		if (err != nil) != tt.wantErr {
-			fmt.Println(tt.args.u)
-			fmt.Println(got)
 			t.Errorf("1 - %q. Shorten() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+			continue
+		}
+		if tt.wantErr == true {
 			continue
 		}
 		if !reflect.DeepEqual(got, tt.want) {

@@ -5,9 +5,8 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"net/http"
 	"net/url"
-
-	"github.com/asaskevich/govalidator"
 )
 
 type NewShorten struct {
@@ -17,7 +16,10 @@ type NewShorten struct {
 	NumBytes   int
 }
 
-// Shorten recieves your customHost and applies to the url to be returned, so
+// Shorten recieves your customHost and applies to the url to be returned
+// By default It uses tokenGenerator to generate your url tokens so you can insert It
+// on your DB, but If you change the Token's name It'll use hashGenerator
+// (If you wish to search for It on your DB and prevent doubled links)
 func (n *NewShorten) Shorten() (*url.URL, error) {
 	err := validateURL(n.U)
 	if err != nil {
@@ -34,10 +36,9 @@ func hashGenerator(u *url.URL) string {
 }
 
 func validateURL(u *url.URL) error {
-	v := govalidator.IsURL(u.String())
-	valid := govalidator.IsRequestURL(u.String())
-	if !valid || !v {
-		return fmt.Errorf("%v is a invalid url", u.String())
+	r, err := http.Get(u.String())
+	if err != nil || r.StatusCode != 200 {
+		return fmt.Errorf("%s is not valid or the Host is having problems", u.String())
 	}
 	return nil
 }
