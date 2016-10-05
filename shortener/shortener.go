@@ -10,27 +10,21 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-// Shorten does the hard work about making your url small
-func Shorten(u *url.URL, customHost string) (*url.URL, error) {
-	err := validateURL(u)
+type NewShorten struct {
+	U          *url.URL
+	CustomHost string
+	Token      string
+	NumBytes   int
+}
+
+// Shorten recieves your customHost and applies to the url to be returned, so
+func (n *NewShorten) Shorten() (*url.URL, error) {
+	err := validateURL(n.U)
 	if err != nil {
 		return nil, err
 	}
-	hash := hashGenerator(u)
-	switch customHost {
-	case "":
-		return &url.URL{
-			Scheme: "https",
-			Host:   u.Host,
-			Path:   hash,
-		}, nil
-	default:
-		return &url.URL{
-			Scheme: "https",
-			Host:   customHost,
-			Path:   hash,
-		}, nil
-	}
+	hash := switchToken(n.U, n.Token, n.NumBytes)
+	return switchHost(n.U, hash, n.CustomHost)
 }
 
 func hashGenerator(u *url.URL) string {
@@ -48,8 +42,39 @@ func validateURL(u *url.URL) error {
 	return nil
 }
 
-func tokenGenerator() string {
-	b := make([]byte, 4)
+func tokenGenerator(numBytes int) string {
+	switch numBytes {
+	case 0:
+		numBytes = 4
+	}
+	b := make([]byte, numBytes)
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
+}
+
+func switchToken(u *url.URL, s string, n int) string {
+	switch s {
+	case "":
+		return tokenGenerator(n)
+	default:
+		return hashGenerator(u)
+	}
+}
+
+func switchHost(u *url.URL, hash, customHost string) (*url.URL, error) {
+	switch customHost {
+	case "":
+		return &url.URL{
+			Scheme: "https",
+			Host:   u.Host,
+			Path:   hash,
+		}, nil
+	default:
+		return &url.URL{
+			Scheme: "https",
+			Host:   customHost,
+			Path:   hash,
+		}, nil
+	}
+
 }
