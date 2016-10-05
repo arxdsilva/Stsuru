@@ -1,13 +1,12 @@
 package server
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"net/http"
+	"net/url"
 
+	"github.com/arxdsilva/Stsuru/shortener"
 	"github.com/arxdsilva/Stsuru/web/persist"
-	"github.com/asaskevich/govalidator"
 
 	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
@@ -36,13 +35,21 @@ func (s *Server) Listen() {
 func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
-	v := validateURL(link)
-	if !v {
-		http.Redirect(w, r, "/", http.StatusNotModified)
-		return
+	// Implementing Shorten
+	u, err := url.Parse(link)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	linkshort, dbHash := hash(link, s.URL)
-	_, err := s.Storage.FindHash(dbHash)
+	newShort := shortener.NewShorten{
+		U: u,
+	}
+	n, err := newShort.Shorten()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	linkshort := n.String()
+	dbHash := n.Path
+	_, err = s.Storage.FindHash(dbHash)
 	if err != nil {
 		err = s.Storage.Save(link, linkshort, dbHash)
 		if err != nil {
@@ -99,22 +106,4 @@ func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
 
-}
-
-func hash(link, path string) (string, string) {
-	h := md5.New()
-	io.WriteString(h, link)
-	hash := string(h.Sum(nil))
-	linkShort := fmt.Sprintf("%s%x", path, hash)
-	dbHash := fmt.Sprintf("%x", hash)
-	return linkShort, dbHash
-}
-
-func validateURL(l string) bool {
-	isURL := govalidator.IsURL(l)
-	validURL := govalidator.IsRequestURL(l)
-	if !isURL || !validURL {
-		return false
-	}
-	return true
 }
