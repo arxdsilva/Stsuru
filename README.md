@@ -10,6 +10,10 @@
 Implementation of a simple URL shortener in Golang. Intended to `hash` & `display` sortened URL's in a 'pure' Golang's server. It uses Gorilla's mux to handle server requests.
 
 ## Instalation
+
+### Stable
+If you need the latest stable version I recomend you to get our latest [**Release - 3.0.0.3**](https://github.com/ArxdSilva/Stsuru/releases).
+
 ### Go Get
 - _If you enjoy, dont forget to **Star** the repository! :)_
 
@@ -42,7 +46,7 @@ $ go run main.go
 ```
 Open your **browser** and type:
 [`localhost:8080`](http://localhost:8080/)
-### Build packages
+### Building packages
 ```shell
 $ go build
 ```
@@ -52,7 +56,7 @@ $ go build
 Check our [MIT](https://github.com/ArxdSilva/Stsuru/blob/master/LICENSE) license file for more info.
 
 ## Credits
-Made by **[@arxdsilva](https://twitter.com/arxdsilva)** with great help of [Tsuru team](https://github.com/tsuru/tsuru)!
+Made by **[@arxdsilva](https://twitter.com/arxdsilva)** with great help of [Tsuru team](https://github.com/tsuru/tsuru) & contributors!
 
 ## Extra
 Want to implement a free PaaS & that is Open source? Check [Tsuru](https://github.com/tsuru/tsuru)!
