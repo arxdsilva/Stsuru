@@ -1,7 +1,6 @@
 package shortener
 
 import (
-	"fmt"
 	"net/url"
 	"reflect"
 	"testing"
@@ -110,12 +109,48 @@ func Test_validateURL(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "02",
+			args: args{
+				u: &url.URL{
+					Scheme: "https",
+					Host:   "",
+					Path:   "notvalid/path",
+				},
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		err := validateURL(tt.args.u)
-		fmt.Println(err)
 		if (err != nil) != tt.wantErr {
 			t.Errorf("%q. validateURL() error = %v, wantErr %v", tt.name, err, tt.wantErr)
+		}
+	}
+}
+
+func TestTokenGenerator(t *testing.T) {
+	tests := []struct {
+		Num int
+		exp int
+	}{
+		{
+			Num: 0,
+			exp: 4,
+		},
+		{
+			Num: 6,
+			exp: 12,
+		},
+		{
+			Num: 8,
+			exp: 16,
+		},
+	}
+	for _, tt := range tests {
+		a := tokenGenerator(tt.Num)
+		if len(a) != tt.exp {
+			t.Errorf("Token of %v bytes expected but %v bytes found", tt.exp, len(a))
 		}
 	}
 }

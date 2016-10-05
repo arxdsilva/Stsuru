@@ -9,6 +9,8 @@ import (
 	"net/url"
 )
 
+// NewShorten is the type used to input your urls to short using:
+// NewShorten{customized}.Short()
 type NewShorten struct {
 	U          *url.URL
 	CustomHost string
@@ -46,9 +48,10 @@ func validateURL(u *url.URL) error {
 func tokenGenerator(numBytes int) string {
 	switch numBytes {
 	case 0:
-		numBytes = 4
+		numBytes = 2
 	}
-	b := make([]byte, numBytes)
+	num := numBytes
+	b := make([]byte, num)
 	rand.Read(b)
 	return fmt.Sprintf("%x", b)
 }
