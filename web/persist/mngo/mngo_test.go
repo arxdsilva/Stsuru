@@ -59,8 +59,8 @@ var s = MongoStorage{
 	Collection: "links",
 }
 
-func TestInsert(t *testing.T) {
-	fmt.Print("Test Insert: ")
+func TestSave(t *testing.T) {
+	fmt.Print("Test Save: ")
 	for _, test := range testCases {
 		if !test.isURL {
 			err := s.Save(test.link, test.linkShort, test.hash)

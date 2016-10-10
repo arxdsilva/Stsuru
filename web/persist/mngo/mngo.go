@@ -1,6 +1,10 @@
 package mngo
 
 import (
+	"fmt"
+	"net/url"
+
+	"github.com/arxdsilva/Stsuru/shortener"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -20,13 +24,23 @@ type LinkData struct {
 }
 
 // Save inputs a link into Mongo's DB
-func (m *MongoStorage) Save(link, linkShort, dbHash string) error {
+func (m *MongoStorage) Save(link, customHost, dbHash string) error {
 	s, err := mgo.Dial(m.URL)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
 
+	parsedLink, _ := url.Parse(link)
+	ls := shortener.NewShorten{
+		U:          parsedLink,
+		CustomHost: customHost,
+		Token:      "hash",
+	}
+	short, _ := ls.Shorten()
+	a := fmt.Sprintf("%v", short)
+	fmt.Printf("SHort: %v", a)
+	linkShort := short.String()
 	l := &LinkData{Link: link, Short: linkShort, Hash: dbHash}
 	err = s.DB(m.DB).C(m.Collection).Insert(l)
 	return err

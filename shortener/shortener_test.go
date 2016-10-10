@@ -49,7 +49,7 @@ func TestShorten(t *testing.T) {
 			},
 			want: &url.URL{
 				Scheme: "https",
-				Host:   "github.com",
+				Host:   "tsu.ru",
 				Path:   "8214e81107a57c97d827272f8ef77c04",
 			},
 			wantErr: false,

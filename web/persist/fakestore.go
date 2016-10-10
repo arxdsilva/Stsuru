@@ -2,7 +2,9 @@ package persist
 
 import (
 	"fmt"
-	"log"
+	"net/url"
+
+	"github.com/arxdsilva/Stsuru/shortener"
 )
 
 // Stored is the fake DB
@@ -10,7 +12,8 @@ type Stored struct {
 	Link, LinkShort, Hash string
 }
 
-// FakeStore is
+// FakeStore stores the given data into FakeStore.Stored so user can use It as
+// a fake DB
 type FakeStore struct {
 	URL                         string
 	Stored                      []Stored
@@ -18,10 +21,25 @@ type FakeStore struct {
 }
 
 // Save ...
-func (f *FakeStore) Save(link, lShort, dbHash string) error {
+func (f *FakeStore) Save(link, customHost, dbHash string) error {
+	u, err := url.Parse(link)
+	if err != nil {
+		f.SaveErr = fmt.Errorf("%s is not a valid URL", link)
+		return f.SaveErr
+	}
+	ls := shortener.NewShorten{
+		U:          u,
+		CustomHost: customHost,
+	}
+	lshort, err := ls.Shorten()
+	if err != nil {
+		return fmt.Errorf("%v", err)
+	}
+	linkShort := lshort.String()
 	n := Stored{
-		Link: link,
-		Hash: dbHash,
+		Link:      link,
+		LinkShort: linkShort,
+		Hash:      dbHash,
 	}
 	if f.SaveErr == nil {
 		f.Stored = append(f.Stored, n)
@@ -66,11 +84,4 @@ func (f *FakeStore) FindHash(s string) (string, error) {
 		}
 	}
 	return s, fmt.Errorf("Not Found")
-}
-
-func checkError(err error) error {
-	if err != nil {
-		log.Fatal(err)
-	}
-	return nil
 }

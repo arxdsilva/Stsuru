@@ -38,14 +38,16 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	// Implementing Shorten
 	u, err := url.Parse(link)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotModified)
+		return
 	}
 	newShort := shortener.NewShorten{
 		U: u,
 	}
 	n, err := newShort.Shorten()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		http.Error(w, err.Error(), http.StatusNotModified)
+		return
 	}
 	linkshort := n.String()
 	dbHash := n.Path
@@ -53,13 +55,14 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		err = s.Storage.Save(link, linkshort, dbHash)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, err.Error(), http.StatusNotModified)
 			return
 		}
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusNotModified)
+	return
 }
 
 // Home querys Storage for all It's elements and calls the specified HTML to load them into the page.

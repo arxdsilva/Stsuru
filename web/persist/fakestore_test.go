@@ -2,19 +2,20 @@ package persist
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"testing"
 )
 
 var expected = []Stored{
 	{
-		"http://localhost:8080/",
-		"http://localhost:8080/9825c2a542dd888e55b9b0e06b04f672",
+		"http://www.globo.com/",
+		"http://tsu.ru/9825c2a542dd888e55b9b0e06b04f672",
 		"9825c2a542dd888e55b9b0e06b04f672",
 	},
 	{
 		"http://science.nasa.gov/",
-		"http://localhost:8080/af13587359208048616bfedcb3b4dbdc",
+		"http://tsu.ru/af13587359208048616bfedcb3b4dbdc",
 		"af13587359208048616bfedcb3b4dbdc",
 	},
 }
@@ -133,4 +134,10 @@ func TestRemove(t *testing.T) {
 		t.Errorf("Expected %s and received %v", "not found", err)
 	}
 	fmt.Println()
+}
+
+func checkError(err error) {
+	if err != nil {
+		log.Panic(err)
+	}
 }

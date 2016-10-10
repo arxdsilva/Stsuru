@@ -10,19 +10,17 @@ import (
 	"testing"
 
 	"github.com/arxdsilva/Stsuru/web/persist"
-	"github.com/arxdsilva/Stsuru/web/persist/mngo"
 	"github.com/gorilla/mux"
 )
 
 var testCases = []struct {
 	name     string
-	hash     string
 	expected int
 }{
-	{"http://localhost:8080/", "9825c2a542dd888e55b9b0e06b04f672", http.StatusFound},
-	{"http://science.nasa.gov/", "af13587359208048616bfedcb3b4dbdc", http.StatusFound},
-	{"https://godoc.org/gopkg.in/mgo.v2", "b5cfe5dac82a4a8af7a505891cd91729", http.StatusFound},
-	{"http://jordanorelli.com/post/32665860244/how-to-use-interfaces-in-go", "", http.StatusNotFound},
+	{"https://www.youtube.com/watch?v=WC5FdFlUcl0&list=PL2LC4RhdHOKe3y0pDyNBMF9ztULgUzKOq&index=1", http.StatusFound},
+	{"http://science.nasa.gov/", http.StatusFound},
+	{"https://godoc.org/gopkg.in/mgo.v2", http.StatusFound},
+	{"http://jordanorelli.com/post/32665860244/how-to-use-interfaces-in-go", http.StatusNotFound},
 }
 var s = Server{Storage: &persist.FakeStore{}}
 
@@ -51,14 +49,12 @@ func TestAddLink(t *testing.T) {
 		name   string
 		expect int
 	}{
-		{"", http.StatusNotModified},
 		{"notalink", http.StatusNotModified},
 		{"notavalidurl.com", http.StatusNotModified},
-		{"http://localhost:8080/", http.StatusFound},
+		{"https://www.youtube.com/watch?v=WC5FdFlUcl0&list=PL2LC4RhdHOKe3y0pDyNBMF9ztULgUzKOq&index=1", http.StatusFound},
 		{"http://science.nasa.gov/", http.StatusFound},
 		{"multiple.dots.not.valid.url", http.StatusNotModified},
 		{"https://godoc.org/gopkg.in/mgo.v2", http.StatusFound},
-		{"https://godoc.org/gopkg.in/mgo.v2", http.StatusNotModified},
 	}
 	v := url.Values{}
 
@@ -93,10 +89,20 @@ func TestAddLink(t *testing.T) {
 
 func TestRedirect(t *testing.T) {
 	fmt.Print("Test Redirect: ")
-	for _, test := range testCases {
-		link := test.name
+	var link string
+	stored, _ := s.Storage.List()
+	for i, test := range testCases {
+		for _, obj := range stored {
+			if test.name == obj.Link {
+				link = obj.Hash
+			}
+			continue
+		}
+		if i == 3 {
+			link = "llll"
+		}
 		path := "/r/"
-		n, _ := hash(link, path)
+		n := addPath(path, link)
 		r, err := http.NewRequest("GET", n, nil)
 		if err != nil {
 			t.Fatalf("unexpected error new request: %v", err)
@@ -109,7 +115,10 @@ func TestRedirect(t *testing.T) {
 		m := mux.NewRouter()
 		m.HandleFunc("/r/{id}", s.Redirect)
 		m.ServeHTTP(w, r)
+
 		if w.Code != test.expected {
+			fmt.Println(n)
+			fmt.Println(test.name)
 			t.Errorf("\nLink %s got %v instead of %v\n", link, w.Code, test.expected)
 			continue
 		}
@@ -120,13 +129,11 @@ func TestRedirect(t *testing.T) {
 
 func TestRemoveLink(t *testing.T) {
 	fmt.Print("Test Removing Links: ")
-	for _, test := range testCases {
-		path := "http://tsu.ru:8080/l/r/"
-		link := test.name
-		n, dbHash := hash(link, path)
-		ngo := mngo.MongoStorage{}
-
-		r, err := http.NewRequest("GET", n, nil)
+	path := "/l/r/"
+	stored, _ := s.Storage.List()
+	for _, test := range stored {
+		pathed := addPath(path, test.Hash)
+		r, err := http.NewRequest("GET", pathed, nil)
 		if err != nil {
 			t.Fatalf("unexpected error new request: %v", err)
 		}
@@ -137,13 +144,16 @@ func TestRemoveLink(t *testing.T) {
 		m := mux.NewRouter()
 		m.HandleFunc("/l/r/{id}", s.RemoveLink)
 		m.ServeHTTP(w, r)
-
-		_, err = ngo.FindHash(dbHash)
+		_, err = s.Storage.FindHash(test.Hash)
 		if err == nil {
-			fmt.Printf("\n%s not expected on Mongo", dbHash)
+			fmt.Printf("\n%s not expected on Storage", test.Hash)
 			continue
 		}
 		fmt.Print("x ")
 	}
 	fmt.Println()
+}
+
+func addPath(path, hash string) string {
+	return fmt.Sprintf("%s%s", path, hash)
 }
