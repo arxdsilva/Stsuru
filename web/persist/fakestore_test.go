@@ -5,6 +5,8 @@ import (
 	"log"
 	"reflect"
 	"testing"
+
+	"github.com/arxdsilva/Stsuru/web/persist/data"
 )
 
 var expected = []Stored{
@@ -41,13 +43,23 @@ func TestSave(t *testing.T) {
 	fmt.Print("Testing Save: ")
 	s := FakeStore{}
 	for _, e := range expected {
-		err := s.Save(e.Link, e.LinkShort, e.Hash)
+		Data := data.LinkData{
+			Link:  e.Link,
+			Hash:  e.Hash,
+			Short: e.LinkShort,
+		}
+		err := s.Save(&Data)
 		checkError(err)
 		fmt.Print(".")
 	}
 	s.SaveErr = fmt.Errorf("not found")
 	for _, e := range notexpected {
-		err := s.Save(e.link, e.linkShort, e.Hash)
+		Data := data.LinkData{
+			Link:  e.link,
+			Hash:  e.Hash,
+			Short: e.linkShort,
+		}
+		err := s.Save(&Data)
 		if err != nil {
 			fmt.Print(".")
 		}

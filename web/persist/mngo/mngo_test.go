@@ -3,6 +3,8 @@ package mngo
 import (
 	"fmt"
 	"testing"
+
+	"github.com/arxdsilva/Stsuru/web/persist/data"
 )
 
 var testCases = []struct {
@@ -63,7 +65,12 @@ func TestSave(t *testing.T) {
 	fmt.Print("Test Save: ")
 	for _, test := range testCases {
 		if !test.isURL {
-			err := s.Save(test.link, test.linkShort, test.hash)
+			InsertData := data.LinkData{
+				Link:  test.link,
+				Short: test.linkShort,
+				Hash:  test.hash,
+			}
+			err := s.Save(&InsertData)
 			if err != nil {
 				t.Fatalf("unexpected save error: %v", err)
 			}

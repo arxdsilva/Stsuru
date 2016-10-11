@@ -2,9 +2,8 @@ package persist
 
 import (
 	"fmt"
-	"net/url"
 
-	"github.com/arxdsilva/Stsuru/shortener"
+	"github.com/arxdsilva/Stsuru/web/persist/data"
 )
 
 // Stored is the fake DB
@@ -21,32 +20,18 @@ type FakeStore struct {
 }
 
 // Save ...
-func (f *FakeStore) Save(link, customHost, dbHash string) error {
-	u, err := url.Parse(link)
-	if err != nil {
-		f.SaveErr = fmt.Errorf("%s is not a valid URL", link)
+func (f *FakeStore) Save(linkData *data.LinkData) error {
+	n := Stored{
+		Link:      linkData.Link,
+		LinkShort: linkData.Short,
+		Hash:      linkData.Hash,
+	}
+	if f.SaveErr != nil {
+		f.SaveErr = fmt.Errorf("%s not saved", n.Link)
 		return f.SaveErr
 	}
-	ls := shortener.NewShorten{
-		U:          u,
-		CustomHost: customHost,
-	}
-	lshort, err := ls.Shorten()
-	if err != nil {
-		return fmt.Errorf("%v", err)
-	}
-	linkShort := lshort.String()
-	n := Stored{
-		Link:      link,
-		LinkShort: linkShort,
-		Hash:      dbHash,
-	}
-	if f.SaveErr == nil {
-		f.Stored = append(f.Stored, n)
-		return nil
-	}
-	f.SaveErr = fmt.Errorf("%s not saved", link)
-	return f.SaveErr
+	f.Stored = append(f.Stored, n)
+	return nil
 }
 
 // List ...

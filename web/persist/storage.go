@@ -1,9 +1,11 @@
 package persist
 
-// Storage ...
+import "github.com/arxdsilva/Stsuru/web/persist/data"
+
+// Storage is the interface that holds how the server uses the given data.
 type Storage interface {
 	List() ([]Stored, error)
-	Save(link, customHost, dbHash string) error
+	Save(linkData *data.LinkData) error
 	Remove(dbHash string) error
 	FindHash(dbHash string) (string, error)
 }

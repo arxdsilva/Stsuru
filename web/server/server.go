@@ -7,6 +7,7 @@ import (
 
 	"github.com/arxdsilva/Stsuru/shortener"
 	"github.com/arxdsilva/Stsuru/web/persist"
+	"github.com/arxdsilva/Stsuru/web/persist/data"
 
 	"github.com/alecthomas/template"
 	"github.com/gorilla/mux"
@@ -53,7 +54,12 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	dbHash := n.Path
 	_, err = s.Storage.FindHash(dbHash)
 	if err != nil {
-		err = s.Storage.Save(link, linkshort, dbHash)
+		Data := data.LinkData{
+			Link:  link,
+			Hash:  dbHash,
+			Short: linkshort,
+		}
+		err = s.Storage.Save(&Data)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusNotModified)
 			return

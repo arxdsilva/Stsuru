@@ -1,10 +1,8 @@
 package mngo
 
 import (
-	"fmt"
-	"net/url"
+	"github.com/arxdsilva/Stsuru/web/persist/data"
 
-	"github.com/arxdsilva/Stsuru/shortener"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 )
@@ -16,33 +14,14 @@ type MongoStorage struct {
 	Collection string
 }
 
-// LinkData holds the structure that is used by mongo to insert data to DB
-type LinkData struct {
-	Link  string
-	Short string
-	Hash  string
-}
-
 // Save inputs a link into Mongo's DB
-func (m *MongoStorage) Save(link, customHost, dbHash string) error {
+func (m *MongoStorage) Save(linkData *data.LinkData) error {
 	s, err := mgo.Dial(m.URL)
 	if err != nil {
 		return err
 	}
 	defer s.Close()
-
-	parsedLink, _ := url.Parse(link)
-	ls := shortener.NewShorten{
-		U:          parsedLink,
-		CustomHost: customHost,
-		Token:      "hash",
-	}
-	short, _ := ls.Shorten()
-	a := fmt.Sprintf("%v", short)
-	fmt.Printf("SHort: %v", a)
-	linkShort := short.String()
-	l := &LinkData{Link: link, Short: linkShort, Hash: dbHash}
-	err = s.DB(m.DB).C(m.Collection).Insert(l)
+	err = s.DB(m.DB).C(m.Collection).Insert(linkData)
 	return err
 }
 
@@ -67,7 +46,7 @@ func (m *MongoStorage) FindHash(hash string) (string, error) {
 	}
 	defer s.Close()
 
-	dbData := LinkData{}
+	dbData := data.LinkData{}
 	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"hash": hash}).One(&dbData)
 	return dbData.Link, err
 }
@@ -80,20 +59,20 @@ func (m *MongoStorage) FindLink(link string) (string, error) {
 	}
 	defer s.Close()
 
-	dbData := LinkData{}
+	dbData := data.LinkData{}
 	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"link": link}).One(&dbData)
 	return dbData.Link, err
 }
 
 // GetAll queries for all entries
-func (m *MongoStorage) GetAll() ([]LinkData, error) {
+func (m *MongoStorage) GetAll() ([]data.LinkData, error) {
 	s, err := mgo.Dial(m.URL)
 	if err != nil {
 		return nil, err
 	}
 	defer s.Close()
 
-	Data := []LinkData{}
+	Data := []data.LinkData{}
 	c := s.DB(m.DB).C(m.Collection)
 	err = c.Find(bson.M{}).All(&Data)
 	return Data, err
@@ -107,7 +86,7 @@ func (m *MongoStorage) CheckMultiple(link string, i int) (bool, error) {
 	}
 	defer s.Close()
 
-	dbNum := []LinkData{}
+	dbNum := []data.LinkData{}
 	err = s.DB(m.DB).C(m.Collection).Find(bson.M{"link": link}).All(&dbNum)
 	if err != nil {
 		return false, err
