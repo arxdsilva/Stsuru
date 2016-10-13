@@ -20,7 +20,7 @@ type NewShorten struct {
 
 // Shorten recieves your customHost and applies to the url to be returned
 // By default It uses tokenGenerator to generate your url tokens so you can insert It
-// on your DB, but If you change the Token's name It'll use HashGenerator
+// on your DB, but If you change the Token's name It'll use hashGenerator
 // (If you wish to search for It on your DB and prevent doubled links)
 func (n *NewShorten) Shorten() (*url.URL, error) {
 	err := validateURL(n.U)
@@ -31,8 +31,7 @@ func (n *NewShorten) Shorten() (*url.URL, error) {
 	return switchHost(n.U, hash, n.CustomHost)
 }
 
-// HashGenerator creates a md5 hash and returns It.
-func HashGenerator(u *url.URL) string {
+func hashGenerator(u *url.URL) string {
 	hasher := md5.New()
 	hasher.Write([]byte(u.String()))
 	return hex.EncodeToString(hasher.Sum(nil))
@@ -62,7 +61,7 @@ func switchToken(u *url.URL, s string, n int) string {
 	case "":
 		return tokenGenerator(n)
 	default:
-		return HashGenerator(u)
+		return hashGenerator(u)
 	}
 }
 

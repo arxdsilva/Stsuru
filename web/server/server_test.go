@@ -36,7 +36,7 @@ func TestHome(t *testing.T) {
 		t.Fatalf("unexpected error new request: %v", err)
 	}
 	w := httptest.NewRecorder()
-	s.Home(w, r)
+	s.home(w, r)
 	if w.Code != http.StatusOK {
 		t.Errorf("Home page didn't return %v", http.StatusOK)
 		return
@@ -68,7 +68,7 @@ func TestAddLink(t *testing.T) {
 		}
 		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		w := httptest.NewRecorder()
-		s.AddLink(w, r)
+		s.addLink(w, r)
 
 		if w.Code != test.expect {
 			t.Errorf("Request %s on Home page returned %v instead of %v", test.name, w.Code, test.expect)
@@ -113,7 +113,7 @@ func TestRedirect(t *testing.T) {
 		w := httptest.NewRecorder()
 
 		m := mux.NewRouter()
-		m.HandleFunc("/r/{id}", s.Redirect)
+		m.HandleFunc("/r/{id}", s.redirectLink)
 		m.ServeHTTP(w, r)
 
 		if w.Code != test.expected {
@@ -142,7 +142,7 @@ func TestRemoveLink(t *testing.T) {
 		r.Header.Set("Accept", "application/xhtml+xml")
 		w := httptest.NewRecorder()
 		m := mux.NewRouter()
-		m.HandleFunc("/l/r/{id}", s.RemoveLink)
+		m.HandleFunc("/l/r/{id}", s.removeLink)
 		m.ServeHTTP(w, r)
 		_, err = s.Storage.FindHash(test.Hash)
 		if err == nil {

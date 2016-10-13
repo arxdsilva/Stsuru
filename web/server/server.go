@@ -22,18 +22,17 @@ type Server struct {
 // Listen Registers the routes used by Stsuru and redirects traffic
 func (s *Server) Listen() {
 	r := mux.NewRouter()
-	r.HandleFunc("/", s.Home)
+	r.HandleFunc("/", s.home)
 	http.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.Dir("css/"))))
-	r.HandleFunc("/r/{id}", s.Redirect)
-	r.HandleFunc("/link/add", s.AddLink)
-	r.HandleFunc("/l/r/{id}", s.RemoveLink)
+	r.HandleFunc("/r/{id}", s.redirectLink)
+	r.HandleFunc("/link/add", s.addLink)
+	r.HandleFunc("/l/r/{id}", s.removeLink)
 	http.Handle("/", r)
 	fmt.Println("The server is now live @ localhost:8080")
 	http.ListenAndServe(":8080", nil)
 }
 
-// AddLink validates the request's URL and asks Mongo to add It on list
-func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
+func (s *Server) addLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
 	u, err := url.Parse(link)
@@ -71,8 +70,7 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	return
 }
 
-// Home querys Storage for all It's elements and calls the specified HTML to load them into the page.
-func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
+func (s *Server) home(w http.ResponseWriter, r *http.Request) {
 	path := "tmpl/index.html"
 	d, err := s.Storage.List()
 	if err != nil {
@@ -91,21 +89,14 @@ func (s *Server) Home(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// CSS loads style into the page
-func CSS(w http.ResponseWriter, r *http.Request) {
-	http.StripPrefix("/css/", http.FileServer(http.Dir("css/")))
-}
-
-// RemoveLink searches db for a certain link & removes It if It exists
-func (s *Server) RemoveLink(w http.ResponseWriter, r *http.Request) {
+func (s *Server) removeLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idHash := id["id"]
 	s.Storage.Remove(idHash)
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-// Redirect takes the hashed URL and checks Mongo If It exists;
-func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
+func (s *Server) redirectLink(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)
 	idHash := id["id"]
 	l, err := s.Storage.FindHash(idHash)
