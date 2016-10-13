@@ -15,8 +15,8 @@ import (
 
 // Server ...
 type Server struct {
-	Storage persist.Storage
-	URL     string
+	Storage    persist.Storage
+	CustomHost string
 }
 
 // Listen Registers the routes used by Stsuru and redirects traffic
@@ -36,7 +36,6 @@ func (s *Server) Listen() {
 func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	link := r.Form["user_link"][0]
-	// Implementing Shorten
 	u, err := url.Parse(link)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusNotModified)
@@ -55,9 +54,10 @@ func (s *Server) AddLink(w http.ResponseWriter, r *http.Request) {
 	_, err = s.Storage.FindHash(dbHash)
 	if err != nil {
 		Data := data.LinkData{
-			Link:  link,
-			Hash:  dbHash,
-			Short: linkshort,
+			Link:       link,
+			Hash:       dbHash,
+			Short:      linkshort,
+			CustomHost: s.CustomHost,
 		}
 		err = s.Storage.Save(&Data)
 		if err != nil {
@@ -110,9 +110,8 @@ func (s *Server) Redirect(w http.ResponseWriter, r *http.Request) {
 	idHash := id["id"]
 	l, err := s.Storage.FindHash(idHash)
 	if err != nil {
-		http.Redirect(w, r, l, http.StatusNotFound)
+		http.Redirect(w, r, "/", http.StatusNotFound)
 		return
 	}
-	http.Redirect(w, r, "/", http.StatusFound)
-
+	http.Redirect(w, r, l, http.StatusFound)
 }
