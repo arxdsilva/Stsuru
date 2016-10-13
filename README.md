@@ -3,8 +3,10 @@
 
 # Stsuru
 
-- **Simple** link 'shortener';
+- **Simple** link shortener;
 - Written in [Go](http://golang.org);
+
+**Obs:** This directory contains a example server using the [Shortener package](https://github.com/ArxdSilva/Stsuru/tree/master/shortener) that is the main application. So if you want to test It locally just use the Instalation guide and run the server.
 
 ## Introduction
 Implementation of a simple URL shortener in Golang. Intended to `hash` & `display` sortened URL's in a 'pure' Golang's server. It uses Gorilla's mux to handle server requests.
