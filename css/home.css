@@ -25,3 +25,7 @@ img {
   width: 20px;
   height: 20px;
 }
+
+.navbar-right {
+  background-color: lightgreen;
+}
