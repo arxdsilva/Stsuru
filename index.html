@@ -1,0 +1,123 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <title>Stsuru by ArxdSilva</title>
+
+    <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/github-light.css">
+    <meta name="viewport" content="width=device-width">
+    <!--[if lt IE 9]>
+    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1>Stsuru</h1>
+        <p>Link Shortener made with Go!</p>
+
+        <p class="view"><a href="https://github.com/ArxdSilva/Stsuru">View the Project on GitHub <small>ArxdSilva/Stsuru</small></a></p>
+
+
+        <ul>
+          <li><a href="https://github.com/ArxdSilva/Stsuru/zipball/master">Download <strong>ZIP File</strong></a></li>
+          <li><a href="https://github.com/ArxdSilva/Stsuru/tarball/master">Download <strong>TAR Ball</strong></a></li>
+          <li><a href="https://github.com/ArxdSilva/Stsuru">View On <strong>GitHub</strong></a></li>
+        </ul>
+      </header>
+      <section>
+        <h3>
+<a id="welcome-to-stsuru" class="anchor" href="#welcome-to-stsuru" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Welcome to Stsuru!</h3>
+
+<p>This is a Link shortener made in Go, It is simple, fast, small and pluggable. Check our Code in Github for more info on how to use It.</p>
+
+<h3>
+<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+
+<p>Contributions are welcome, we advise you to check our LICENSE file for more info.</p>
+
+<h3>
+<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Support or Contact</h3>
+
+<p>Need some help with the code? Contact me on <a href="www.twitter.com/arxdsilva">Twitter</a>! </p>
+
+<h3>
+<a id="code" class="anchor" href="#code" aria-hidden="true"><span aria-hidden="true" class="octicon octicon-link"></span></a>Code</h3>
+
+<p>It's so simple that you can see how It works in this page:</p>
+
+<div class="highlight highlight-source-go"><pre><span class="pl-c">// NewShorten is the type used to input your urls to short using:</span>
+<span class="pl-c">// NewShorten{customize}.Short()</span>
+<span class="pl-k">type</span> <span class="pl-v">NewShorten</span> <span class="pl-k">struct</span> {
+    <span class="pl-v">U</span>          *url.<span class="pl-smi">URL</span>
+    <span class="pl-v">CustomHost</span> <span class="pl-k">string</span>
+    <span class="pl-v">Token</span>      <span class="pl-k">string</span>
+    <span class="pl-v">NumBytes</span>   <span class="pl-k">int</span>
+}
+
+<span class="pl-k">func</span> <span class="pl-en">(<span class="pl-v">n</span> *<span class="pl-v">NewShorten</span>) <span class="pl-en">Shorten</span></span>() (*<span class="pl-v">url</span>.<span class="pl-v">URL</span>, <span class="pl-v">error</span>) {
+    <span class="pl-smi">err</span> <span class="pl-k">:=</span> <span class="pl-c1">validateURL</span>(n.<span class="pl-smi">U</span>)
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> {
+        <span class="pl-k">return</span> <span class="pl-c1">nil</span>, err
+    }
+    <span class="pl-smi">hash</span> <span class="pl-k">:=</span> <span class="pl-c1">switchToken</span>(n.<span class="pl-smi">U</span>, n.<span class="pl-smi">Token</span>, n.<span class="pl-smi">NumBytes</span>)
+    <span class="pl-k">return</span> <span class="pl-c1">switchHost</span>(n.<span class="pl-smi">U</span>, hash, n.<span class="pl-smi">CustomHost</span>)
+}
+
+<span class="pl-k">func</span> <span class="pl-en">validateURL</span>(<span class="pl-v">u</span> *<span class="pl-v">url</span>.<span class="pl-v">URL</span>) <span class="pl-v">error</span> {
+    <span class="pl-smi">r</span>, <span class="pl-smi">err</span> <span class="pl-k">:=</span> http.<span class="pl-c1">Get</span>(u.<span class="pl-c1">String</span>())
+    <span class="pl-k">if</span> err != <span class="pl-c1">nil</span> || r.<span class="pl-smi">StatusCode</span> != <span class="pl-c1">200</span> {
+        <span class="pl-k">return</span> fmt.<span class="pl-c1">Errorf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%s</span> is not valid or the Host is having problems<span class="pl-pds">"</span></span>, u.<span class="pl-c1">String</span>())
+    }
+    <span class="pl-k">return</span> <span class="pl-c1">nil</span>
+}
+
+<span class="pl-k">func</span> <span class="pl-en">tokenGenerator</span>(<span class="pl-v">numBytes</span> <span class="pl-v">int</span>) <span class="pl-v">string</span> {
+    <span class="pl-k">switch</span> numBytes {
+    <span class="pl-k">case</span> <span class="pl-c1">0</span>:
+        numBytes = <span class="pl-c1">2</span>
+    }
+    <span class="pl-smi">num</span> <span class="pl-k">:=</span> numBytes
+    <span class="pl-smi">b</span> <span class="pl-k">:=</span> <span class="pl-c1">make</span>([]<span class="pl-k">byte</span>, num)
+    rand.<span class="pl-c1">Read</span>(b)
+    <span class="pl-k">return</span> fmt.<span class="pl-c1">Sprintf</span>(<span class="pl-s"><span class="pl-pds">"</span><span class="pl-c1">%x</span><span class="pl-pds">"</span></span>, b)
+}
+
+<span class="pl-k">func</span> <span class="pl-en">switchToken</span>(<span class="pl-v">u</span> *<span class="pl-v">url</span>.<span class="pl-v">URL</span>, <span class="pl-v">s</span> <span class="pl-v">string</span>, <span class="pl-v">n</span> <span class="pl-v">int</span>) <span class="pl-v">string</span> {
+    <span class="pl-k">switch</span> s {
+    <span class="pl-k">case</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>:
+        <span class="pl-k">return</span> <span class="pl-c1">tokenGenerator</span>(n)
+    <span class="pl-k">default</span>:
+        <span class="pl-k">return</span> <span class="pl-c1">hashGenerator</span>(u)
+    }
+}
+
+<span class="pl-k">func</span> <span class="pl-en">switchHost</span>(<span class="pl-v">u</span> *<span class="pl-v">url</span>.<span class="pl-v">URL</span>, <span class="pl-v">hash</span>, <span class="pl-v">customHost</span> <span class="pl-v">string</span>) (*<span class="pl-v">url</span>.<span class="pl-v">URL</span>, <span class="pl-v">error</span>) {
+    <span class="pl-k">switch</span> customHost {
+    <span class="pl-k">case</span> <span class="pl-s"><span class="pl-pds">"</span><span class="pl-pds">"</span></span>:
+        <span class="pl-k">return</span> &amp;url.<span class="pl-smi">URL</span>{
+            Scheme: <span class="pl-s"><span class="pl-pds">"</span>https<span class="pl-pds">"</span></span>,
+            Host:   <span class="pl-s"><span class="pl-pds">"</span>tsu.ru<span class="pl-pds">"</span></span>,
+            Path:   hash,
+        }, <span class="pl-c1">nil</span>
+    <span class="pl-k">default</span>:
+        <span class="pl-k">return</span> &amp;url.<span class="pl-smi">URL</span>{
+            Scheme: <span class="pl-s"><span class="pl-pds">"</span>https<span class="pl-pds">"</span></span>,
+            Host:   customHost,
+            Path:   hash,
+        }, <span class="pl-c1">nil</span>
+    }
+
+}</pre></div>
+      </section>
+      <footer>
+        <p>This project is maintained by <a href="https://github.com/ArxdSilva">ArxdSilva</a></p>
+        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
+      </footer>
+    </div>
+    <script src="javascripts/scale.fix.js"></script>
+    
+  </body>
+</html>
