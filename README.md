@@ -12,7 +12,7 @@ Implementation of a simple URL shortener in Golang. Intended to `hash` & `displa
 ## Instalation
 
 ### Stable
-If you need the latest stable version I recomend you to get our latest [**Release - 3.0.0.3**](https://github.com/ArxdSilva/Stsuru/releases).
+If you need the latest stable version I recomend you to get our latest [**Release**](https://github.com/ArxdSilva/Stsuru/releases).
 
 ### Go Get
 - _If you enjoy, dont forget to **Star** the repository! :)_

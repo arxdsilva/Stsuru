@@ -10,7 +10,7 @@ import (
 )
 
 // NewShorten is the type used to input your urls to short using:
-// NewShorten{customize}.Short()
+// NewShorten{customize}.Shorten()
 type NewShorten struct {
 	U          *url.URL
 	CustomHost string
