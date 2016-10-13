@@ -15,10 +15,40 @@
 			"revisionTime": "2016-04-05T07:15:01Z"
 		},
 		{
-			"checksumSHA1": "CDOphCxF7dup+hBBVRpFeQhM9Jw=",
-			"path": "github.com/asaskevich/govalidator",
-			"revision": "593d64559f7600f29581a3ee42177f5dbded27a9",
-			"revisionTime": "2016-07-15T17:06:12Z"
+			"checksumSHA1": "BLsX7zEeK1WeTnQplDgV0OhSe3k=",
+			"path": "github.com/arxdsilva/Stsuru",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
+		},
+		{
+			"checksumSHA1": "HzXrt7uMMC+Y94uAhk294g7DjcU=",
+			"path": "github.com/arxdsilva/Stsuru/shortener",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
+		},
+		{
+			"checksumSHA1": "IPbk+GRDw6GmKZdlwNRGYn2CNd8=",
+			"path": "github.com/arxdsilva/Stsuru/web/persist",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
+		},
+		{
+			"checksumSHA1": "NZtFyOhSX3S1HJrrvnyQaysLQws=",
+			"path": "github.com/arxdsilva/Stsuru/web/persist/data",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
+		},
+		{
+			"checksumSHA1": "3sLf1moBSUOzE4XXZHeYKgME2co=",
+			"path": "github.com/arxdsilva/Stsuru/web/persist/mngo",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
+		},
+		{
+			"checksumSHA1": "v8i6+8DchvzWhTSdjmBY+oyozFc=",
+			"path": "github.com/arxdsilva/Stsuru/web/server",
+			"revision": "0979d38f6dd62e733a6b88401134f30a3db85915",
+			"revisionTime": "2016-10-13T14:03:31Z"
 		},
 		{
 			"checksumSHA1": "g/V4qrXjUGG9B+e3hB+4NAYJ5Gs=",
