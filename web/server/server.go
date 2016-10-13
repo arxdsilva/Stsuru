@@ -13,7 +13,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-// Server ...
+// Server is the user's way to customize which storage & Host will be used
 type Server struct {
 	Storage    persist.Storage
 	CustomHost string
