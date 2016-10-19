@@ -46,7 +46,7 @@ func TestSave(t *testing.T) {
 		Data := data.LinkData{
 			Link:  e.Link,
 			Hash:  e.Hash,
-			Short: e.LinkShort,
+			Short: e.Short,
 		}
 		err := s.Save(&Data)
 		checkError(err)

@@ -8,7 +8,7 @@ import (
 
 // Stored is the fake DB
 type Stored struct {
-	Link, LinkShort, Hash string
+	Link, Short, Hash string
 }
 
 // FakeStore stores the given data into FakeStore.Stored so user can use It as
@@ -22,9 +22,9 @@ type FakeStore struct {
 // Save ...
 func (f *FakeStore) Save(linkData *data.LinkData) error {
 	n := Stored{
-		Link:      linkData.Link,
-		LinkShort: linkData.Short,
-		Hash:      linkData.Hash,
+		Link:  linkData.Link,
+		Short: linkData.Short,
+		Hash:  linkData.Hash,
 	}
 	if f.SaveErr != nil {
 		f.SaveErr = fmt.Errorf("%s not saved", n.Link)

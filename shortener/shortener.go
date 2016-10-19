@@ -57,12 +57,10 @@ func tokenGenerator(numBytes int) string {
 }
 
 func switchToken(u *url.URL, s string, n int) string {
-	switch s {
-	case "":
+	if s == "" {
 		return tokenGenerator(n)
-	default:
-		return hashGenerator(u)
 	}
+	return hashGenerator(u)
 }
 
 func switchHost(u *url.URL, hash, customHost string) (*url.URL, error) {
